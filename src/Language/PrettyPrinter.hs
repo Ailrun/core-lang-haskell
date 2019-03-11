@@ -1,5 +1,7 @@
 module Language.PrettyPrinter where
 
+import Prelude hiding ( seq )
+
 import Data.List
 import Language.Types
 import Util
@@ -283,16 +285,16 @@ flatten :: Int -> [(ISeq, Int)] -> String
 
 iDisplay seq = flatten 0 [(seq, 0)]
 
-flatten col ((INewline, indent) : seqs)
+flatten _ ((INewline, indent) : seqs)
   = '\n' : space indent ++ flatten indent seqs
-flatten col ((IIndent seq, indent) : seqs)
+flatten col ((IIndent seq, _) : seqs)
   = flatten col ((seq, col) : seqs)
 -- |
 -- Following patterns for 'flatten' are parts of exercise 1.6
 flatten col ((IAppend seq1 seq2, indent) : seqs)
   = flatten col ((seq1, indent) : (seq2, indent) : seqs)
-flatten col ((IStr s, indent) : seqs) = s ++ flatten (col + length s) seqs
-flatten col ((INil, indent) : seqs) = flatten col seqs
+flatten col ((IStr s, _) : seqs) = s ++ flatten (col + length s) seqs
+flatten col ((INil, _) : seqs) = flatten col seqs
 flatten _ [] = ""
 
 iNum :: Int -> ISeq
@@ -308,7 +310,7 @@ iFWNum width n
 -- This function is named after the similar function of the Miranda
 iLayn :: [ISeq] -> ISeq
 iLayn seqs
-  = iConcat (map layItem (zip [1..] seqs))
+  = iConcat (zipWith layItem [1..] seqs)
   where
-    layItem (n, seq)
+    layItem n seq
       = iConcat [ iFWNum 4 n, iStr ") ", iIndent seq, iNewline ]
