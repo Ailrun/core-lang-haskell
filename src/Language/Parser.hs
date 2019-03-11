@@ -321,6 +321,12 @@ mkApChain :: [CoreExpr] -> CoreExpr
 mkApChain (expr:exprs) = foldl EAp expr exprs
 mkApChain [] = error "Compiler Bug mkApChain"
 
+-- |
+-- Following 'PartialExpr', 'pExpr',
+-- 'pExpr1', 'pExpr1c', 'pExpr2', 'pExpr2c',
+-- 'pExpr3', 'pExpr3c', 'relOps', 'pRelOp',
+-- 'pExpr4', 'pExpr4c', 'pExpr5', 'pExpr5c' and
+-- 'pExpr6', 'assembleOp' are exercise 1.24
 data PartialExpr
   = NoOp
   | FoundOp Name CoreExpr
