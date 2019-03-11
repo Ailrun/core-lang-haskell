@@ -8,7 +8,7 @@ prettyPrint :: CoreProgram -> String
 -- |
 -- Following codes show bad performances,
 -- therefore they are impractical.
--- See /exercises/exercise1-1.xls for data.
+-- See </exercises/exercise1-1.xls exercise1-1.xls> for data.
 {-
 prettyPrintExpr :: CoreExpr -> String
 prettyPrintExpr (ENum n) = show n
@@ -124,7 +124,7 @@ prettyPrintSupercombinatorDefinition (name, vars, expr)
 
 -- |
 -- 'prettyPrintExpr' with 'ISep' works much faster than one without it.
--- See /exercises/exercise1-1.xls for data.
+-- See </exercises/exercise1-4.xls exercise1-4.xls> for data.
 {-
 -- |
 -- Utility for exercise 1.4
