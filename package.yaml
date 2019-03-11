@@ -1,0 +1,106 @@
+spec-version:        0.31.0
+name:                core-lang-haskell
+version:             0.1.0.0
+#synopsis:
+#description:
+category:            Web
+homepage:            https://github.com/Ailrun/core-lang-haskell#readme
+bug-reports:         https://github.com/Ailrun/core-lang-haskell/issues
+author:              Junyoung Clare Jang
+maintainer:          jjc9310@gmail.com
+copyright:           2019 Junyoung Clare Jang
+license:             BSD3
+license-file:        LICENSE
+#tested-with:
+#build-type:          Simple
+extra-source-files:
+  - README.md
+#extra-doc-files:
+#data-files:
+#data-dir:
+github: Ailrun/core-lang-haskell
+#custom-setup:
+  #dependencies:
+
+#flags:
+
+library:
+  ## Common fields
+  source-dirs:
+    - src
+  ## Library fields
+  #exposed:
+  #exposed-modules:
+  #generated-exposed-modules:
+  #other-modules:
+  #generated-other-modules:
+  #reexported-modules:
+  #signatures:
+
+#internal-libraries:
+
+executables:
+  core-lang-haskell:
+    ## Common fields
+    source-dirs:
+      - app
+    ghc-options:     -threaded -rtsopts -with-rtsopts=-N
+    dependencies:
+      - core-lang-haskell
+    ## Executable fields
+    main:            Main.hs
+    #other-modules:
+    #generated-other-modules:
+
+#executable:
+
+tests:
+  core-lang-haskell-test:
+    ## Common fields
+    source-dirs:
+      - test
+    ghc-options:     -threaded -rtsopts -with-rtsopts=-N
+    dependencies:
+      - core-lang-haskell
+      - hspec
+      - QuickCheck
+    ## Test fields
+    main:            Spec.hs
+    #other-modules:
+    #generated-other-modules:
+
+#benchmarks:
+
+#defaults:
+  #github:
+  #ref:
+  #path:
+  #local:
+
+## Common fields
+#buildable:
+#source-dirs:
+#default-extensions:
+#other-extensions:
+#ghc-options:
+#ghc-prof-options:
+#ghcjs-options:
+#cpp-options:
+#cc-options:
+#c-sources:
+#cxx-options:
+#cxx-sources:
+#js-sources:
+#extra-lib-dirs:
+#extra-libraries:
+#include-dirs:
+#install-includes:
+#frameworks:
+#extra-frameworks-dirs:
+#ld-options:
+dependencies:
+  - base >= 4.7 && < 5
+#pkg-config-dependencies:
+#build-tools:
+#system-build-tools:
+#when:
