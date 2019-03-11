@@ -32,6 +32,9 @@ makeMultiAp n e1 e2 = foldl EAp e1 (take n e2s)
 -- Before exercise 1.8
 {-
 prettyPrintExpr :: CoreExpr -> ISeq
+-- |
+-- Before exercise 1.3
+{-
 prettyPrintExpr (EVar v) = iStr v
 prettyPrintExpr (EAp e1 e2) = prettyPrintExpr e1 `iAppend` iStr " " `iAppend` prettyPrintAExpr e2
 prettyPrintExpr (ELet isRec defns expr)
@@ -43,10 +46,35 @@ prettyPrintExpr (ELet isRec defns expr)
     keyword
       | not isRec = "let"
       | otherwise = "letrec"
+-}
+
+prettyPrintDefinitions :: [(Name, CoreExpr)] -> ISeq
+prettyPrintDefinitions defns
+  = iInterleave sep (map prettyPrintDefinition defns)
+  where
+    sep = iConcat [ iStr ";", iNewline ]
+
+prettyPrintDefinition :: (Name, CoreExpr) -> ISeq
+prettyPrintDefinition (name, expr)
+  = iConcat [ iStr name, iStr " = ", iIndent (prettyPrintExpr expr) ]
+
 -- |
 -- Following two patterns of 'prettyPrintExpr',
--- 'prettyPrintAlternatives', 'prettyPrintAlternative' and 'prettyPrintVars'
--- are parts of exercise 1.3
+-- 'prettyPrintAlternatives', 'prettyPrintAlternative',
+-- 'prettyPrintVars', 'prettyPrintAExpr',
+-- 'prettyPrintProgram' and 'prettyPrintSupercombinatorDefinition'
+-- are exercise 1.3
+prettyPrintExpr (EVar v) = iStr v
+prettyPrintExpr (EAp e1 e2) = prettyPrintExpr e1 `iAppend` iStr " " `iAppend` prettyPrintAExpr e2
+prettyPrintExpr (ELet isRec defns expr)
+  = iConcat [ iStr keyword, iNewline
+            , iStr "  ", iIndent (prettyPrintDefinitions defns), iNewline
+            , iStr "in ", prettyPrintExpr expr
+            ]
+  where
+    keyword
+      | not isRec = "let"
+      | otherwise = "letrec"
 prettyPrintExpr (ECase expr alters)
   = iConcat [ iStr "case ", iIndent (prettyPrintExpr expr), iStr " of", iNewline
             , iStr "  ", iIndent (prettyPrintAlternatives alters)
@@ -55,9 +83,61 @@ prettyPrintExpr (ELam vars expr)
   = iConcat [ iStr "\\ ", prettyPrintVars vars, iStr " .", iNewline
             , iStr "  ", iIndent (prettyPrintExpr expr)
             ]
+
+prettyPrintAlternatives :: [CoreAlter] -> ISeq
+prettyPrintAlternatives alters
+  = iInterleave sep (map prettyPrintAlternative alters)
+  where
+    sep = iConcat [ iStr ";", iNewline ]
+
+prettyPrintAlternative :: CoreAlter -> ISeq
+prettyPrintAlternative (tag, [], expr)
+  = iConcat [ iStr "<", iStr (show tag), iStr "> -> ", iIndent (prettyPrintExpr expr) ]
+prettyPrintAlternative (tag, vars, expr)
+  = iConcat [ iStr "<", iStr (show tag), iStr "> ", prettyPrintVars vars, iStr " -> ", iIndent (prettyPrintExpr expr) ]
 -}
+
+prettyPrintVars :: [Name] -> ISeq
+prettyPrintVars vars
+  = iInterleave (iStr " ") (map iStr vars)
+
 -- |
--- Following 'prettyPrintExpr' implementation is a part of exercise 1.8
+-- Before exercise 1.8
+{-
+prettyPrintAExpr :: CoreExpr -> ISeq
+prettyPrintAExpr expr
+  | isAExpr expr = prettyPrintExpr expr
+  | otherwise = iConcat [ iStr "(", prettyPrintExpr expr, iStr ")" ]
+-}
+
+prettyPrintProgram :: CoreProgram -> ISeq
+prettyPrintProgram scdefns
+  = iInterleave sep (map prettyPrintSupercombinatorDefinition scdefns)
+  where
+    sep = iConcat [ iStr ";", iNewline ]
+
+prettyPrintSupercombinatorDefinition :: CoreScDefn -> ISeq
+prettyPrintSupercombinatorDefinition (name, [], expr)
+  = iConcat [ iStr name, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
+prettyPrintSupercombinatorDefinition (name, vars, expr)
+  = iConcat [ iStr name, iStr " ", prettyPrintVars vars, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
+
+-- |
+-- 'prettyPrintExpr' with 'ISep' works much faster than one without it.
+-- See /exercises/exercise1-1.xls for data.
+{-
+-- |
+-- Utility for exercise 1.4
+makeMultiAp :: Int -> CoreExpr -> CoreExpr -> CoreExpr
+makeMultiAp n e1 e2 = foldl EAp e1 (take n e2s)
+  where
+    e2s = e2 : e2s
+-}
+
+-- |
+-- Following 'prettyPrintExpr', 'prettyPrintAlternatives',
+-- 'prettyPrintAlternative', 'prettyPrintDefinitions' and
+-- 'prettyPrintDefinition' implementations are parts of exercise 1.8
 prettyPrintExpr :: Int -> CoreExpr -> ISeq
 prettyPrintExpr _ (ENum n) = iNum n
 prettyPrintExpr _ (EVar v) = iStr v
@@ -105,23 +185,6 @@ prettyPrintExpr _ (ELam vars expr)
             , iStr "  ", iIndent (prettyPrintExpr 0 expr)
             ]
 
--- |
--- Before exercise 1.8
-{-
-prettyPrintAlternatives :: [CoreAlter] -> ISeq
-prettyPrintAlternatives alters
-  = iInterleave sep (map prettyPrintAlternative alters)
-  where
-    sep = iConcat [ iStr ";", iNewline ]
-
-prettyPrintAlternative :: CoreAlter -> ISeq
-prettyPrintAlternative (tag, [], expr)
-  = iConcat [ iStr "<", iStr (show tag), iStr "> -> ", iIndent (prettyPrintExpr expr) ]
-prettyPrintAlternative (tag, vars, expr)
-  = iConcat [ iStr "<", iStr (show tag), iStr "> ", prettyPrintVars vars, iStr " -> ", iIndent (prettyPrintExpr expr) ]
--}
--- |
--- Following 'prettyPrintAlternatives' and 'prettyPrintAlternative' implementations are parts of exercise 1.8
 prettyPrintAlternatives :: [CoreAlter] -> ISeq
 prettyPrintAlternatives alters
   = iInterleave sep (map prettyPrintAlternative alters)
@@ -134,25 +197,6 @@ prettyPrintAlternative (tag, [], expr)
 prettyPrintAlternative (tag, vars, expr)
   = iConcat [ iStr "<", iStr (show tag), iStr "> ", prettyPrintVars vars, iStr " -> ", iIndent (prettyPrintExpr 0 expr) ]
 
-prettyPrintVars :: [Name] -> ISeq
-prettyPrintVars vars
-  = iInterleave (iStr " ") (map iStr vars)
-
--- |
--- Before exercise 1.8
-{-
-prettyPrintDefinitions :: [(Name, CoreExpr)] -> ISeq
-prettyPrintDefinitions defns
-  = iInterleave sep (map prettyPrintDefinition defns)
-  where
-    sep = iConcat [ iStr ";", iNewline ]
-
-prettyPrintDefinition :: (Name, CoreExpr) -> ISeq
-prettyPrintDefinition (name, expr)
-  = iConcat [ iStr name, iStr " = ", iIndent (prettyPrintExpr expr) ]
--}
--- |
--- Following 'prettyPrintDefinitions' and 'prettyPrintDefinition' implementations are parts of exercise 1.8
 prettyPrintDefinitions :: [(Name, CoreExpr)] -> ISeq
 prettyPrintDefinitions defns
   = iInterleave sep (map prettyPrintDefinition defns)
@@ -164,39 +208,3 @@ prettyPrintDefinition (name, expr)
   = iConcat [ iStr name, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
 
 prettyPrint program = iDisplay (prettyPrintProgram program)
-
--- |
--- Before exercise 1.8
-{-
--- |
--- Following 'prettyPrintAExpr', 'prettyPrintProgram' and
--- 'prettyPrintSupercombinatorDefinition' are parts of exercise 1.3
-prettyPrintAExpr :: CoreExpr -> ISeq
-prettyPrintAExpr expr
-  | isAExpr expr = prettyPrintExpr expr
-  | otherwise = iConcat [ iStr "(", prettyPrintExpr expr, iStr ")" ]
--}
-
-prettyPrintProgram :: CoreProgram -> ISeq
-prettyPrintProgram scdefns
-  = iInterleave sep (map prettyPrintSupercombinatorDefinition scdefns)
-  where
-    sep = iConcat [ iStr ";", iNewline ]
-
-prettyPrintSupercombinatorDefinition :: CoreScDefn -> ISeq
-prettyPrintSupercombinatorDefinition (name, [], expr)
-  = iConcat [ iStr name, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
-prettyPrintSupercombinatorDefinition (name, vars, expr)
-  = iConcat [ iStr name, iStr " ", prettyPrintVars vars, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
-
--- |
--- 'prettyPrintExpr' with 'ISep' works much faster than one without it.
--- See /exercises/exercise1-1.xls for data.
-{-
--- |
--- Utility for exercise 1.4
-makeMultiAp :: Int -> CoreExpr -> CoreExpr -> CoreExpr
-makeMultiAp n e1 e2 = foldl EAp e1 (take n e2s)
-  where
-    e2s = e2 : e2s
--}

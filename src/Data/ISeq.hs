@@ -22,13 +22,6 @@ iInterleave _ [] = iNil
 iInterleave sep (seq : seqs) = foldl (\acc s -> acc `iAppend` sep `iAppend` s) seq seqs
 
 -- |
--- Following 'iPrecParen' implementation is a part of exercise 1.8
-iPrecParen :: Int -> Int -> ISeq -> ISeq
-iPrecParen contextPrec currentPrec seq
-  | contextPrec > currentPrec = iConcat [ iStr "(", seq, iStr ")" ]
-  | otherwise = seq
-
--- |
 -- Following definitions do not support indenting.
 {-
 data ISeq
@@ -43,9 +36,6 @@ iNil = INil
 {-
 iStr = IStr
 -}
--- |
--- Following implementation of 'iStr' is exercise 1.7
-iStr = iConcat . intersperse INewline . map IStr . lines
 -- |
 -- Before exercise 1.5
 {-
@@ -98,6 +88,17 @@ flatten col ((IAppend seq1 seq2, indent) : seqs)
 flatten col ((IStr s, _) : seqs) = s ++ flatten (col + length s) seqs
 flatten col ((INil, _) : seqs) = flatten col seqs
 flatten _ [] = ""
+
+-- |
+-- Following implementation of 'iStr' is exercise 1.7
+iStr = iConcat . intersperse INewline . map IStr . lines
+
+-- |
+-- Following 'iPrecParen' implementation is a part of exercise 1.8
+iPrecParen :: Int -> Int -> ISeq -> ISeq
+iPrecParen contextPrec currentPrec seq
+  | contextPrec > currentPrec = iConcat [ iStr "(", seq, iStr ")" ]
+  | otherwise = seq
 
 iNum :: Int -> ISeq
 iNum = iStr . show
