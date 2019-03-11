@@ -1,13 +1,13 @@
 # core-lang-haskell
 
-This repository is about an implementation of a simple functional language based on <span id="reference-1">[Simon\[1\]](#footnote-1)</span>.
+This repository is about an implementation of a simple functional language based on <span id="text-1">[Simon\[1\]](#reference-1)</span>.
 
 ## Exercises
 
 ### Chapter 1
 
 <details>
-<summary>Exercises Table For Chapter 1</summary>
+<summary>Exercises in Chapter 1</summary>
 <p>
 
 | Name          | Files                                                      |
@@ -40,6 +40,6 @@ This repository is about an implementation of a simple functional language based
 </p>
 </details>
 
-# Footnotes
+# References
 
-<span id="footnote-1">[Simon\[1\]](#reference-1): Simon L Peyton Jones, David R Lester. January 1992. _Implementing functional languages: a tutorial_. Prentice Hall</span>
+<span id="reference-1">[Simon\[1\]](#text-1): Simon L Peyton Jones, David R Lester. January 1992. _Implementing functional languages: a tutorial_. Prentice Hall</span>
