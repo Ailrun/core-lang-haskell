@@ -40,6 +40,24 @@ This repository is about an implementation of a simple functional language based
 </p>
 </details>
 
+### Chapter 2
+
+<details>
+<summary>Exercises in Chapter 2</summary>
+<p>
+
+| Name          | Files                              |
+|---------------|------------------------------------|
+| Exercise 2.1  | /exercises/exercise2-1.md          |
+| Exercise 2.2  | /exercises/exercise2-2.md          |
+| Exercise 2.3  | _skipped_                          |
+| Exercise 2.4  | /src/Language/Interpreter.hs |
+| Exercise 2.5  | /src/Language/Interpreter.hs |
+| Exercise 2.6  | /src/Language/Interpreter.hs |
+
+</p>
+</details>
+
 # References
 
 <span id="reference-1">[Simon\[1\]](#text-1): Simon L Peyton Jones, David R Lester. January 1992. _Implementing functional languages: a tutorial_. Prentice Hall</span>
