@@ -2,6 +2,7 @@ module Language.PrettyPrinter where
 
 import Data.ISeq
 import Language.Types
+import Util
 
 prettyPrint :: CoreProgram -> String
 
@@ -48,7 +49,7 @@ prettyPrintExpr (ELet isRec defns expr)
       | otherwise = "letrec"
 -}
 
-prettyPrintDefinitions :: [(Name, CoreExpr)] -> ISeq
+prettyPrintDefinitions :: Assoc Name CoreExpr -> ISeq
 prettyPrintDefinitions defns
   = iInterleave sep (map prettyPrintDefinition defns)
   where
@@ -197,7 +198,7 @@ prettyPrintAlternative (tag, [], expr)
 prettyPrintAlternative (tag, vars, expr)
   = iConcat [ iStr "<", iStr (show tag), iStr "> ", prettyPrintVars vars, iStr " -> ", iIndent (prettyPrintExpr 0 expr) ]
 
-prettyPrintDefinitions :: [(Name, CoreExpr)] -> ISeq
+prettyPrintDefinitions :: Assoc Name CoreExpr -> ISeq
 prettyPrintDefinitions defns
   = iInterleave sep (map prettyPrintDefinition defns)
   where

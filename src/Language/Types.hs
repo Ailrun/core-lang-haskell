@@ -1,5 +1,7 @@
 module Language.Types where
 
+import Util
+
 data Expr a
   = EVar Name
   | ENum Int
@@ -7,7 +9,7 @@ data Expr a
   | EAp (Expr a) (Expr a)
   | ELet
     IsRec
-    [(a, Expr a)]
+    (Assoc a (Expr a))
     (Expr a)
   | ECase
     (Expr a)
@@ -24,10 +26,10 @@ recursive, nonRecursive :: IsRec
 recursive = True
 nonRecursive = False
 
-bindersOf :: [(a, b)] -> [a]
-bindersOf = map fst
-rhssOf :: [(a, b)] -> [b]
-rhssOf = map snd
+bindersOf :: Assoc a b -> [a]
+bindersOf = aDomain
+rhssOf :: Assoc a b -> [b]
+rhssOf = aRange
 
 type Alter a = (Int, [a], Expr a)
 type CoreAlter = Alter Name

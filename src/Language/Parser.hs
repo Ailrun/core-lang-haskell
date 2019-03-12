@@ -2,6 +2,7 @@ module Language.Parser where
 
 import Data.Char
 import Language.Types
+import Util
 
 -- |
 -- Before exercise 1.11
@@ -74,7 +75,7 @@ clex l (c0 : c1 : cs) | opTokVal `elem` twoCharOps = (l, opTokVal) : clex l cs
 clex l (c : cs) = (l, [c]) : clex l cs
 clex l [] = []
 
-type Parser a = [Token] -> [(a, [Token])]
+type Parser a = [Token] -> Assoc a [Token]
 
 pLit :: String -> Parser String
 -- |
@@ -255,10 +256,10 @@ pLet isRec = pThen4 (mkLet isRec) (pLit keyword) pDefns (pLit "in") pExpr
     keyword
       | isRec = "letrec"
       | otherwise = "let"
-mkLet :: IsRec -> a -> [(Name, CoreExpr)] -> b -> CoreExpr -> CoreExpr
+mkLet :: IsRec -> a -> Assoc Name CoreExpr -> b -> CoreExpr -> CoreExpr
 mkLet isRec _ defns _ = ELet isRec defns
 
-pDefns :: Parser [(Name, CoreExpr)]
+pDefns :: Parser (Assoc Name CoreExpr)
 pDefns = pOneOrMoreWithSep pDefn (pLit ";")
 pDefn :: Parser (Name, CoreExpr)
 pDefn = pThen3 mkDefn pVar (pLit "=") pExpr
