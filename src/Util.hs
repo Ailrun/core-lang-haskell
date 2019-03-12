@@ -1,6 +1,7 @@
 module Util
   ( hInitial
   , hAlloc
+  , hUpdate
   , hFree
   , hLookup
   , hAddresses
