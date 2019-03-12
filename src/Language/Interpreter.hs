@@ -1,8 +1,11 @@
+{-# LANGUAGE CPP #-}
 module Language.Interpreter where
 
 import Data.ISeq
 import Data.List
+#if __CLH_EXERCISE_2__ >= 7
 import Data.StatHeap
+#endif
 import Language.Parser
 import Language.Prelude
 import Language.Types
@@ -22,20 +25,16 @@ type TiStack = [Addr]
 data TiDump = DummyTiDump
 initialTiDump = DummyTiDump
 
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 type TiHeap = Heap Node
--}
+#endif
 
--- |
--- Before exercise 2.13
-{-
+#if __CLH_EXERCISE_2__ < 13
 data Node
   = NAp Addr Addr
   | NSc Name [Name] CoreExpr
   | NNum Int
--}
+#endif
 
 type TiGlobals = Assoc Name Addr
 
@@ -43,15 +42,13 @@ tiStatInitial :: TiStats
 tiStatIncSteps :: TiStats -> TiStats
 tiStatGetSteps :: TiStats -> Int
 
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 type TiStats = Int
 
 tiStatInitial = 0
 tiStatIncSteps = (+ 1)
 tiStatGetSteps s = s
--}
+#endif
 
 applyToStats :: (TiStats -> TiStats) -> TiState -> TiState
 applyToStats statFun (stack, dump, heap, scDefs, stats)
@@ -70,21 +67,17 @@ extraPreludeDefs :: CoreProgram
 extraPreludeDefs = []
 
 buildInitialHeap :: [CoreScDefn] -> (TiHeap, TiGlobals)
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 buildInitialHeap = mapAccumL allocateSc hInitial
--}
+#endif
 
 allocateSc :: TiHeap -> CoreScDefn -> (TiHeap, (Name, Addr))
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 allocateSc heap (name, args, body)
   = (heap', (name, addr))
   where
     (heap', addr) = hAlloc heap (NSc name args body)
--}
+#endif
 
 eval state
   = state : restStates
@@ -95,36 +88,30 @@ eval state
     nextState = doAdmin (step state)
 
 doAdmin :: TiState -> TiState
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 doAdmin = applyToStats tiStatIncSteps
--}
+#endif
 
 tiFinal :: TiState -> Bool
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 tiFinal ([soleAddr], _, heap, _, _) = isDataNode (hLookup heap soleAddr)
 tiFinal ([], _, _, _, _) = error "Empty stack!"
 tiFinal _ = False
--}
+#endif
 
 isDataNode :: Node -> Bool
 isDataNode (NNum n) = True
 isDataNode node = False
 
 step :: TiState -> TiState
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 step state@(stack, dump, heap, globals, stats)
   = dispatch (hLookup heap (head stack))
   where
     dispatch (NNum n) = numStep state n
     dispatch (NAp a1 a2) = apStep state a1 a2
     dispatch (NSc scName argNames body) = scStep state scName argNames body
--}
+#endif
 
 numStep :: TiState -> Int -> TiState
 numStep state n = error "Num applied as a function!"
@@ -134,9 +121,7 @@ apStep (stack, dump, heap, globals, stats) a1 _
   = (a1 : stack, dump, heap, globals, stats)
 
 scStep :: TiState -> Name -> [Name] -> CoreExpr -> TiState
--- |
--- Before exercise 2.6
-{-
+#if __CLH_EXERCISE_2__ < 6
 scStep (stack, dump, heap, globals, stats) scName argNames body
   = (stack', dump, heap', globals, stats)
   where
@@ -144,24 +129,20 @@ scStep (stack, dump, heap, globals, stats) scName argNames body
     (heap', resultAddr) = instantiate body heap env
     env = argBindings ++ globals
     argBindings = zip argNames (getArgs heap stack)
--}
+#endif
 
 getArgs :: TiHeap -> TiStack -> [Addr]
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 getArgs heap (_ : stack)
   = map getArg stack
   where
     getArg a
       = let (NAp fun arg) = hLookup heap a
         in arg
--}
+#endif
 
 instantiate :: CoreExpr -> TiHeap -> TiGlobals -> (TiHeap, Addr)
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 instantiate (ENum n) heap env = hAlloc heap (NNum n)
 instantiate (EAp e1 e2) heap env
   = hAlloc heap2 (NAp a1 a2)
@@ -176,17 +157,15 @@ instantiate (ELet isRec defs body) heap env
   = instantiateLet isRec defs body heap env
 instantiate (ECase e alts) heap env
   = error "Can't instantiate case exprs"
--}
+#endif
 
 instantiateConstr :: Int -> Int -> TiHeap -> TiGlobals -> (TiHeap, Addr)
 instantiateConstr = error "Can't instantiate constructors yet"
 
 instantiateLet :: IsRec -> Assoc Name CoreExpr -> CoreExpr -> TiHeap -> TiGlobals -> (TiHeap, Addr)
--- |
--- Before exercise 2.10
-{-
+#if __CLH_EXERCISE_2__ < 10
 instantiateLet = error "Can't instantiate let(rec)s yet"
--}
+#endif
 
 showResults states
   = iDisplay resultSeq
@@ -197,17 +176,13 @@ showResults states
                 ]
 
 showState :: TiState -> ISeq
--- |
--- Before exercise 2.5
-{-
+#if __CLH_EXERCISE_2__ < 5
 showState (stack, _, heap, _, _)
   = iConcat [ showStack heap stack, iNewline ]
--}
+#endif
 
 showStack :: TiHeap -> TiStack -> ISeq
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 showStack heap stack
   = iConcat [ iStr "Stk ["
             , iIndent (iInterleave iNewline (map showStackItem stack))
@@ -216,28 +191,24 @@ showStack heap stack
   where
     showStackItem addr
       = iConcat [ showFWAddr addr, iStr ": ", showStkNode heap (hLookup heap addr) ]
--}
+#endif
 
 showStkNode :: TiHeap -> Node -> ISeq
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 showStkNode heap (NAp funAddr argAddr)
   = iConcat [ iStr "NAp ", showFWAddr funAddr, iStr " ", showFWAddr argAddr
             , iStr " (", showNode (hLookup heap argAddr), iStr ")"
             ]
 showStkNode heap node = showNode node
--}
+#endif
 
--- |
--- Before exercise 2.13
-{-
+#if __CLH_EXERCISE_2__ < 13
 showNode :: Node -> ISeq
 showNode (NAp a1 a2)
   = iConcat [ iStr "NAp ", showAddrToSeq a1, iStr " ", showAddrToSeq a2 ]
 showNode (NSc scName argNames body) = iStr ("NSc " ++ scName)
 showNode (NNum n) = iStr "NNum " `iAppend` iNum n
--}
+#endif
 
 -- |
 -- Name is changed from `showAddr` to `showAddrToSeq` to avoid
@@ -251,31 +222,24 @@ showFWAddr addr = iStr (space (4 - length str) ++ str)
     str = showAddr addr
 
 showStats :: TiState -> ISeq
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 showStats (_, _, _, _, stats)
   = iConcat [ iNewline
             , iNewline
             , iStr "Total number of steps = ", iNum (tiStatGetSteps stats)
             ]
--}
+#endif
 
--- |
--- Following 'showState' and 'showHeap' are exercise 2.5
+#if __CLH_EXERCISE_2__ >= 5
 showState (stack, _, heap, _, _)
   = iConcat [ showStack heap stack, iNewline
-            -- |
-            -- Following is only for exercise 2.6
-            {-
+#if __CLH_EXERCISE_2__ == 6
             , showHeap heap, iNewline
-            -}
+#endif
             ]
 
 showHeap :: TiHeap -> ISeq
--- |
--- Before exercise 2.7
-{-
+#if __CLH_EXERCISE_2__ < 7
 showHeap heap
   = iConcat [ iStr "Heap ["
             , iIndent (iInterleave iNewline (map showHeapItem (hAddresses heap)))
@@ -284,8 +248,7 @@ showHeap heap
       showHeapItem addr
         = iConcat [ showFWAddr addr, iStr ": ", showStkNode heap (hLookup heap addr) ]
 
--- |
--- Following 'scStep' is exercise 2.6
+#if __CLH_EXERCISE_2__ >= 6
 scStep (stack, dump, heap, globals, stats) scName argNames body
   | argsLength + 1 <= length stack = (stack', dump, heap', globals, stats)
   where
@@ -296,10 +259,10 @@ scStep (stack, dump, heap, globals, stats) scName argNames body
     argsLength = length argNames
 scStep (stack, dump, heap, globals, stats) scName argNames body
   = error ("Two few arguments are provided to the function " ++ scName)
--}
+#endif
+#endif
 
--- |
--- Following definitions before the comment "The end of exercise 2.7" are exercise 2.7
+#if __CLH_EXERCISE_2__ >= 7
 type TiHeap = StatHeap Node
 
 type TiStats
@@ -355,17 +318,14 @@ tiFinal ([soleAddr], _, heap, _, _) = isDataNode (statHLookup heap soleAddr)
 tiFinal ([], _, _, _, _) = error "Empty stack!"
 tiFinal _ = False
 
-
--- |
--- Before exercise 2.13
-{-
+#if __CLH_EXERCISE_2__ < 13
 step state@(stack, dump, heap, globals, stats)
   = dispatch (statHLookup heap (head stack))
   where
     dispatch (NNum n) = numStep state n
     dispatch (NAp a1 a2) = apStep state a1 a2
     dispatch (NSc scName argNames body) = scStep state scName argNames body
--}
+#endif
 
 getArgs heap (_ : stack)
   = map getArg stack
@@ -398,15 +358,13 @@ showStack heap stack
     showStackItem addr
       = iConcat [ showFWAddr addr, iStr ": ", showStkNode heap (statHLookup heap addr) ]
 
--- |
--- Before exercise 2.13
-{-
+#if __CLH_EXERCISE_2__ < 13
 showStkNode heap (NAp funAddr argAddr)
   = iConcat [ iStr "NAp ", showFWAddr funAddr, iStr " ", showFWAddr argAddr
             , iStr " (", showNode (statHLookup heap argAddr), iStr ")"
             ]
 showStkNode heap node = showNode node
--}
+#endif
 
 showStats (_, _, heap, _, stats)
   = iConcat [ iNewline
@@ -447,9 +405,7 @@ showHeap heap
       showHeapItem addr
         = iConcat [ showFWAddr addr, iStr ": ", showStkNode heap (statHLookup heap addr) ]
 
--- |
--- Before exercise 2.13
-{-
+#if __CLH_EXERCISE_2__ < 13
 scStep (stack, dump, heap, globals, stats) scName argNames body
   | argsLength + 1 <= length stack = (stack', dump, heap', globals, tiStatIncScReds stats)
   where
@@ -460,29 +416,23 @@ scStep (stack, dump, heap, globals, stats) scName argNames body
     argsLength = length argNames
 scStep (stack, dump, heap, globals, stats) scName argNames body
   = error ("Two few arguments are provided to the function " ++ scName)
--}
--- |
--- The end of exercise 2.7
+#endif
 
--- |
--- Before exercise 2.11
-{-
--- |
--- Following 'instantiateLet' and 'instantiateDef' are exercise 2.10
+#if __CLH_EXERCISE_2__ >= 10
+#if __CLH_EXERCISE_2__ < 11
 instantiateLet isRec defs body heap env
   | not isRec = instantiate body heap' env'
   where
     (heap', defBindings) = mapAccumL (instantiateDef env) heap defs
     env' = defBindings ++ env
--}
+#endif
 
 instantiateDef env heap (name, body)
   = (heap', (name, addr))
   where
     (heap', addr) = instantiate body heap env
 
--- |
--- Following 'instantiateLet' is exercise 2.11
+#if __CLH_EXERCISE_2__ >= 11
 instantiateLet isRec defs body heap env = instantiate body heap' env'
   where
     (heap', defBindings) = mapAccumL (instantiateDef env') heap defs
@@ -491,8 +441,7 @@ instantiateLet isRec defs body heap env = instantiate body heap' env'
       | otherwise = instantiateDef env
     env' = defBindings ++ env
 
--- |
--- Following definitions are exercise 2.13
+#if __CLH_EXERCISE_2__ >= 13
 data Node
   = NAp Addr Addr
   | NSc Name [Name] CoreExpr
@@ -536,3 +485,8 @@ step state@(stack, dump, heap, globals, stats)
 indStep :: TiState -> Addr -> TiState
 indStep (_ : stack, dump, heap, globals, stats) addr
   = (addr : stack, dump, heap, globals, stats)
+#endif
+#endif
+#endif
+#endif
+#endif

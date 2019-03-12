@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Language.PrettyPrinter where
 
 import Data.ISeq
@@ -10,7 +11,7 @@ prettyPrint :: CoreProgram -> String
 -- Following codes show bad performances,
 -- therefore they are impractical.
 -- See </exercises/exercise1-1.xls exercise1-1.xls> for data.
-{-
+#if __CLH_EXERCISE_1__ <= 1
 prettyPrintExpr :: CoreExpr -> String
 prettyPrintExpr (ENum n) = show n
 prettyPrintExpr (EVar v) = v
@@ -27,15 +28,12 @@ makeMultiAp :: Int -> CoreExpr -> CoreExpr -> CoreExpr
 makeMultiAp n e1 e2 = foldl EAp e1 (take n e2s)
   where
     e2s = e2 : e2s
--}
+#endif
 
--- |
--- Before exercise 1.8
-{-
+#if __CLH_EXERCISE_1__ >= 1
+#if __CLH_EXERCISE_1__ < 8
 prettyPrintExpr :: CoreExpr -> ISeq
--- |
--- Before exercise 1.3
-{-
+#if __CLH_EXERCISE_1__ < 3
 prettyPrintExpr (EVar v) = iStr v
 prettyPrintExpr (EAp e1 e2) = prettyPrintExpr e1 `iAppend` iStr " " `iAppend` prettyPrintAExpr e2
 prettyPrintExpr (ELet isRec defns expr)
@@ -47,7 +45,7 @@ prettyPrintExpr (ELet isRec defns expr)
     keyword
       | not isRec = "let"
       | otherwise = "letrec"
--}
+#endif
 
 prettyPrintDefinitions :: Assoc Name CoreExpr -> ISeq
 prettyPrintDefinitions defns
@@ -65,8 +63,10 @@ prettyPrintDefinition (name, expr)
 -- 'prettyPrintVars', 'prettyPrintAExpr',
 -- 'prettyPrintProgram' and 'prettyPrintSupercombinatorDefinition'
 -- are exercise 1.3
+#if __CLH_EXERCISE_1__ >= 3
 prettyPrintExpr (EVar v) = iStr v
 prettyPrintExpr (EAp e1 e2) = prettyPrintExpr e1 `iAppend` iStr " " `iAppend` prettyPrintAExpr e2
+#endif
 prettyPrintExpr (ELet isRec defns expr)
   = iConcat [ iStr keyword, iNewline
             , iStr "  ", iIndent (prettyPrintDefinitions defns), iNewline
@@ -85,6 +85,7 @@ prettyPrintExpr (ELam vars expr)
             , iStr "  ", iIndent (prettyPrintExpr expr)
             ]
 
+#if __CLH_EXERCISE_1__ >= 3
 prettyPrintAlternatives :: [CoreAlter] -> ISeq
 prettyPrintAlternatives alters
   = iInterleave sep (map prettyPrintAlternative alters)
@@ -96,20 +97,20 @@ prettyPrintAlternative (tag, [], expr)
   = iConcat [ iStr "<", iStr (show tag), iStr "> -> ", iIndent (prettyPrintExpr expr) ]
 prettyPrintAlternative (tag, vars, expr)
   = iConcat [ iStr "<", iStr (show tag), iStr "> ", prettyPrintVars vars, iStr " -> ", iIndent (prettyPrintExpr expr) ]
--}
+#endif
+#endif
 
+#if __CLH_EXERCISE_1__ >= 3
 prettyPrintVars :: [Name] -> ISeq
 prettyPrintVars vars
   = iInterleave (iStr " ") (map iStr vars)
 
--- |
--- Before exercise 1.8
-{-
+#if __CLH_EXERCISE_1__ < 8
 prettyPrintAExpr :: CoreExpr -> ISeq
 prettyPrintAExpr expr
   | isAExpr expr = prettyPrintExpr expr
   | otherwise = iConcat [ iStr "(", prettyPrintExpr expr, iStr ")" ]
--}
+#endif
 
 prettyPrintProgram :: CoreProgram -> ISeq
 prettyPrintProgram scdefns
@@ -126,19 +127,14 @@ prettyPrintSupercombinatorDefinition (name, vars, expr)
 -- |
 -- 'prettyPrintExpr' with 'ISep' works much faster than one without it.
 -- See </exercises/exercise1-4.xls exercise1-4.xls> for data.
-{-
--- |
--- Utility for exercise 1.4
+#if __CLH_EXERCISE_1__ == 4
 makeMultiAp :: Int -> CoreExpr -> CoreExpr -> CoreExpr
 makeMultiAp n e1 e2 = foldl EAp e1 (take n e2s)
   where
     e2s = e2 : e2s
--}
+#endif
 
--- |
--- Following 'prettyPrintExpr', 'prettyPrintAlternatives',
--- 'prettyPrintAlternative', 'prettyPrintDefinitions' and
--- 'prettyPrintDefinition' implementations are parts of exercise 1.8
+#if __CLH_EXERCISE_1__ >= 8
 prettyPrintExpr :: Int -> CoreExpr -> ISeq
 prettyPrintExpr _ (ENum n) = iNum n
 prettyPrintExpr _ (EVar v) = iStr v
@@ -209,3 +205,8 @@ prettyPrintDefinition (name, expr)
   = iConcat [ iStr name, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
 
 prettyPrint program = iDisplay (prettyPrintProgram program)
+#endif
+#endif
+#else
+prettyPrint = undefined
+#endif
