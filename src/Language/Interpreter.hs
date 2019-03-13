@@ -22,8 +22,10 @@ type TiState = (TiStack, TiDump, TiHeap, TiGlobals, TiStats)
 
 type TiStack = [Addr]
 
+#if __CLH_EXERCISE_2__ < 16
 data TiDump = DummyTiDump
 initialTiDump = DummyTiDump
+#endif
 
 #if __CLH_EXERCISE_2__ < 7
 type TiHeap = Heap Node
@@ -114,11 +116,15 @@ step state@(stack, dump, heap, globals, stats)
 #endif
 
 numStep :: TiState -> Int -> TiState
+#if __CLH_EXERCISE_2__ < 16
 numStep state n = error "Num applied as a function!"
+#endif
 
 apStep :: TiState -> Addr -> Addr -> TiState
+#if __CLH_EXERCISE_2__ < 16
 apStep (stack, dump, heap, globals, stats) a1 _
   = (a1 : stack, dump, heap, globals, stats)
+#endif
 
 scStep :: TiState -> Name -> [Name] -> CoreExpr -> TiState
 #if __CLH_EXERCISE_2__ < 6
@@ -297,7 +303,9 @@ tiStatGetMaxStackDepth :: TiStats -> Int
 tiStatGetMaxStackDepth (_, _, maxStackDepth)
   = maxStackDepth
 
+#if __CLH_EXERCISE_2__ < 16
 buildInitialHeap = mapAccumL allocateSc statHInitial
+#endif
 
 allocateSc heap (name, args, body)
   = (heap', (name, addr))
@@ -314,9 +322,11 @@ doAdmin state@(stack, _, _, _, stats)
     stackDepth = length stack
     statMaxStackDepth = tiStatGetMaxStackDepth stats
 
+#if __CLH_EXERCISE_2__ < 16
 tiFinal ([soleAddr], _, heap, _, _) = isDataNode (statHLookup heap soleAddr)
 tiFinal ([], _, _, _, _) = error "Empty stack!"
 tiFinal _ = False
+#endif
 
 #if __CLH_EXERCISE_2__ < 13
 step state@(stack, dump, heap, globals, stats)
@@ -442,11 +452,13 @@ instantiateLet isRec defs body heap env = instantiate body heap' env'
     env' = defBindings ++ env
 
 #if __CLH_EXERCISE_2__ >= 13
+#if __CLH_EXERCISE_2__ < 16
 data Node
   = NAp Addr Addr
   | NSc Name [Name] CoreExpr
   | NNum Int
   | NInd Addr
+#endif
 
 showNode :: TiHeap -> Node -> ISeq
 showNode _ (NAp a1 a2)
@@ -455,6 +467,8 @@ showNode _ (NSc scName argNames body) = iStr ("NSc " ++ scName)
 showNode _ (NNum n) = iStr "NNum " `iAppend` iNum n
 showNode heap (NInd a)
   = iConcat [ iStr "NInd (", showNode heap (statHLookup heap a), iStr ")" ]
+showNode heap (NPrim name _)
+  = iConcat [ iStr "NPrim ", iStr name ]
 
 showStkNode heap (NAp funAddr argAddr)
   = iConcat [ iStr "NAp ", showFWAddr funAddr, iStr " ", showFWAddr argAddr
@@ -477,6 +491,7 @@ scStep (stack, dump, heap, globals, stats) scName argNames body
   = error ("Two few arguments are provided to the function " ++ scName)
 #endif
 
+#if __CLH_EXERCISE_2__ < 16
 step state@(stack, dump, heap, globals, stats)
   = dispatch (statHLookup heap (head stack))
   where
@@ -484,6 +499,7 @@ step state@(stack, dump, heap, globals, stats)
     dispatch (NAp a1 a2) = apStep state a1 a2
     dispatch (NSc scName argNames body) = scStep state scName argNames body
     dispatch (NInd addr) = indStep state addr
+#endif
 
 indStep :: TiState -> Addr -> TiState
 indStep (_ : stack, dump, heap, globals, stats) addr
@@ -531,6 +547,91 @@ scStep (stack, dump, heap, globals, stats) scName argNames body
     argsLength = length argNames
 scStep (stack, dump, heap, globals, stats) scName argNames body
   = error ("Two few arguments are provided to the function " ++ scName)
+
+#if __CLH_EXERCISE_2__ >= 16
+type TiDump = [TiStack]
+initialTiDump = []
+
+data Node
+  = NAp Addr Addr
+  | NSc Name [Name] CoreExpr
+  | NNum Int
+  | NInd Addr
+  | NPrim Name Primitive
+
+data Primitive = Neg | Add | Sub | Mul | Div
+
+buildInitialHeap scDefs
+  = (heap2, scAddrs ++ primAddrs)
+  where
+    (heap1, scAddrs) = mapAccumL allocateSc statHInitial scDefs
+    (heap2, primAddrs) = mapAccumL allocatePrim heap1 primitives
+
+primitives :: Assoc Name Primitive
+primitives
+  = [ ("negate", Neg)
+    , ("+", Add), ("-", Sub)
+    , ("*", Mul), ("/", Div)
+    ]
+
+allocatePrim :: TiHeap -> (Name, Primitive) -> (TiHeap, (Name, Addr))
+allocatePrim heap (name, prim) = (heap', (name, addr))
+  where
+    (heap', addr) = statHAlloc heap (NPrim name prim)
+
+step state@(stack, dump, heap, globals, stats)
+  = dispatch (statHLookup heap (head stack))
+  where
+    dispatch (NNum n) = numStep state n
+    dispatch (NAp a1 a2) = apStep state a1 a2
+    dispatch (NSc scName argNames body) = scStep state scName argNames body
+    dispatch (NInd addr) = indStep state addr
+    dispatch (NPrim _ prim) = primStep state prim
+
+primStep :: TiState -> Primitive -> TiState
+primStep state Neg = primNeg state
+
+-- Do we need to check stack length?
+-- It should be longer than or equal to 2
+primNeg :: TiState -> TiState
+primNeg (stack, dump, heap, globals, stats)
+  | isDataNode arg = (stack', dump, heap', globals, stats)
+  | otherwise = (argAddr : [], stack : dump, heap, globals, stats)
+  where
+    heap' = statHUpdate heap rootAddr (NNum (negate value))
+
+    rootAddr : _ = stack'
+    stack' = drop 1 stack
+
+    argAddr : _ = getArgs heap stack
+    arg = statHLookup heap argAddr
+    (NNum value) = arg
+
+numStep (_ : [], stack : dump, heap, globals, stats) _
+  = (stack, dump, heap, globals, stats)
+numStep (stack, _ : dump, heap, globals, stats) _
+  = error ("Wrong stack is detected : " ++ iDisplay (showStack heap stack))
+numStep (_, dump, heap, globals, stats) _
+  = error ("Wrong dump is detected : " ++ iDisplay (iInterleave iNewline (map (showStack heap) dump)))
+
+apStep (stack, dump, heap, globals, stats) a1 a2
+  | isInd = (stack, dump, heap', globals, stats)
+  | otherwise = (a1 : stack, dump, heap, globals, stats)
+  where
+    topAddr : _ = stack
+    heap' = case arg of
+      NInd a3 -> statHUpdate heap topAddr (NAp a1 a3)
+      _ -> heap
+    isInd = case arg of
+      NInd _ -> True
+      _ -> False
+    arg = statHLookup heap a2
+
+tiFinal ([soleAddr], _, heap, _, _) = isDataNode (statHLookup heap soleAddr)
+tiFinal ([], _, _, _, _) = error "Empty stack!"
+tiFinal _ = False
+
+#endif
 #endif
 #endif
 #endif
