@@ -875,6 +875,7 @@ showNode heap (NPrim name _)
 showNode heap (NData tag args)
   = iConcat [ iStr "NData ", iNum tag, iStr ", ", iInterleave (iStr " ") (map showFWAddr args) ]
 
+#if __CLH_EXERCISE_2__ < 22
 data Primitive
   = Neg
   | Add
@@ -899,6 +900,7 @@ primitives
     , ("<", Less), ("<=", LessEq)
     , ("==", Eq), ("~=", NotEq)
     ]
+#endif
 
 instantiateConstr tag arity heap env = (heap', addr)
   where
@@ -931,6 +933,7 @@ dataStep (stack, _ : dump, heap, globals, stats) _ _
 dataStep (_, dump, heap, globals, stats) _ _
   = error ("Wrong dump is detected : " ++ iDisplay (iInterleave iNewline (map (showStack heap) dump)))
 
+#if __CLH_EXERCISE_2__ < 22
 primStep state Neg = primNeg state
 primStep state Add = primArith state (+)
 primStep state Sub = primArith state (-)
@@ -944,6 +947,7 @@ primStep state Less = primComp state (<)
 primStep state LessEq = primComp state (<=)
 primStep state Eq = primComp state (==)
 primStep state NotEq = primComp state (/=)
+#endif
 
 primConstr :: TiState -> Int -> Int -> TiState
 primConstr (stack, dump, heap, globals, stats) tag arith
@@ -1004,6 +1008,69 @@ primDyadic (stack, dump, heap, globals, stats) f
     arg2 = statHLookup heap arg2Addr
     arg1IsDataNode = isDataNode arg1
     arg2IsDataNode = isDataNode arg2
+
+#if __CLH_EXERCISE_2__ >= 22
+data Primitive
+  = Neg
+  | Add
+  | Sub
+  | Mul
+  | Div
+  | PrimConstr Int Int
+  | If
+  | Greater
+  | GreaterEq
+  | Less
+  | LessEq
+  | Eq
+  | NotEq
+  | CasePair
+
+primitives
+  = [ ("negate", Neg)
+    , ("+", Add), ("-", Sub)
+    , ("*", Mul), ("/", Div)
+    , ("if", If)
+    , (">", Greater), (">=", GreaterEq)
+    , ("<", Less), ("<=", LessEq)
+    , ("==", Eq), ("~=", NotEq)
+    , ("casePair", CasePair)
+    ]
+
+primStep state Neg = primNeg state
+primStep state Add = primArith state (+)
+primStep state Sub = primArith state (-)
+primStep state Mul = primArith state (*)
+primStep state Div = primArith state div
+primStep state (PrimConstr tag arith) = primConstr state tag arith
+primStep state If = primIf state
+primStep state Greater = primComp state (>)
+primStep state GreaterEq = primComp state (>=)
+primStep state Less = primComp state (<)
+primStep state LessEq = primComp state (<=)
+primStep state Eq = primComp state (==)
+primStep state NotEq = primComp state (/=)
+primStep state CasePair = primCasePair state
+
+primCasePair :: TiState -> TiState
+primCasePair (stack, dump, heap, globals, stats)
+  | isDataNode expr = (rootStack, dump, heap'', globals, stats)
+  | otherwise = ([exprAddr], caseApStack : dump, heap, globals, stats)
+  where
+    heap''
+      | length args /= 2 || tag /= 1 = error "Wrong type"
+      | otherwise = statHUpdate heap' rootAddr (NAp funAddr' (args !! 1))
+
+    (heap', funAddr') = statHAlloc heap (NAp funAddr (args !! 0))
+
+    _ : caseApStack = stack
+    _ : rootStack = caseApStack
+    rootAddr : _ = rootStack
+
+    exprAddr : funAddr : _ = getArgs heap stack
+    expr = statHLookup heap exprAddr
+    NData tag args = expr
+#endif
 #endif
 #endif
 #endif
