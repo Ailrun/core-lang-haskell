@@ -462,6 +462,7 @@ showStkNode heap (NAp funAddr argAddr)
             ]
 showStkNode heap node = showNode heap node
 
+#if __CLH_EXERCISE_2__ < 14
 scStep (stack, dump, heap, globals, stats) scName argNames body
   | argsLength + 1 <= length stack = (stack'', dump, heap'', globals, tiStatIncScReds stats)
   where
@@ -474,6 +475,7 @@ scStep (stack, dump, heap, globals, stats) scName argNames body
     argsLength = length argNames
 scStep (stack, dump, heap, globals, stats) scName argNames body
   = error ("Two few arguments are provided to the function " ++ scName)
+#endif
 
 step state@(stack, dump, heap, globals, stats)
   = dispatch (statHLookup heap (head stack))
@@ -486,6 +488,50 @@ step state@(stack, dump, heap, globals, stats)
 indStep :: TiState -> Addr -> TiState
 indStep (_ : stack, dump, heap, globals, stats) addr
   = (addr : stack, dump, heap, globals, stats)
+
+instantiateAndUpdate :: CoreExpr -> Addr -> TiHeap -> TiGlobals -> TiHeap
+instantiateAndUpdate (EAp e1 e2) updateAddr heap env
+  = statHUpdate heap2 updateAddr (NAp a1 a2)
+  where
+    (heap1, a1) = instantiate e1 heap env
+    (heap2, a2) = instantiate e2 heap1 env
+#if __CLH_EXERCISE_2__ >= 14
+instantiateAndUpdate (ENum n) updateAddr heap env = statHUpdate heap updateAddr (NNum n)
+instantiateAndUpdate (EVar v) updateAddr heap env
+  = statHUpdate heap updateAddr (NInd vAddr)
+  where
+    vAddr = aLookup env v (error ("Undefined name " ++ v))
+instantiateAndUpdate (EConstr tag arity) updateAddr heap env
+  = instantiateAndUpdateConstr tag arity updateAddr heap env
+instantiateAndUpdate (ELet isRec defs body) updateAddr heap env
+  = instantiateAndUpdateLet isRec defs body updateAddr heap env
+instantiateAndUpdate (ECase e alts) updateAddr heap env
+  = error "Can't instantiate case exprs"
+
+instantiateAndUpdateConstr :: Int -> Int -> Addr -> TiHeap -> TiGlobals -> TiHeap
+instantiateAndUpdateConstr = error "Can't instantiate constructors yet"
+
+instantiateAndUpdateLet :: IsRec -> Assoc Name CoreExpr -> CoreExpr -> Addr -> TiHeap -> TiGlobals -> TiHeap
+instantiateAndUpdateLet isRec defs body addr heap env = instantiateAndUpdate body addr heap' env'
+  where
+    (heap', defBindings) = mapAccumL allocateDef heap defs
+    allocateDef
+      | isRec = instantiateDef env'
+      | otherwise = instantiateDef env
+    env' = defBindings ++ env
+
+scStep (stack, dump, heap, globals, stats) scName argNames body
+  | argsLength + 1 <= length stack = (stack'', dump, heap', globals, tiStatIncScReds stats)
+  where
+    rootAddr : stack' = drop argsLength stack
+    stack'' = rootAddr : stack'
+    heap' = instantiateAndUpdate body rootAddr heap env
+    env = argBindings ++ globals
+    argBindings = zip argNames (getArgs heap stack)
+    argsLength = length argNames
+scStep (stack, dump, heap, globals, stats) scName argNames body
+  = error ("Two few arguments are provided to the function " ++ scName)
+#endif
 #endif
 #endif
 #endif
