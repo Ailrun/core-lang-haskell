@@ -104,8 +104,10 @@ tiFinal _ = False
 #endif
 
 isDataNode :: Node -> Bool
+#if __CLH_EXERCISE_2__ != 18
 isDataNode (NNum n) = True
 isDataNode node = False
+#endif
 
 step :: TiState -> TiState
 #if __CLH_EXERCISE_2__ < 7
@@ -168,7 +170,9 @@ instantiate (ECase e alts) heap env
 #endif
 
 instantiateConstr :: Int -> Int -> TiHeap -> TiGlobals -> (TiHeap, Addr)
+#if __CLH_EXERCISE_2__ != 18
 instantiateConstr = error "Can't instantiate constructors yet"
+#endif
 
 instantiateLet :: IsRec -> Assoc Name CoreExpr -> CoreExpr -> TiHeap -> TiGlobals -> (TiHeap, Addr)
 #if __CLH_EXERCISE_2__ < 10
@@ -347,6 +351,7 @@ getArgs heap (_ : stack)
       = let (NAp fun arg) = statHLookup heap a
         in arg
 
+#if __CLH_EXERCISE_2__ != 18
 instantiate (ENum n) heap env = statHAlloc heap (NNum n)
 instantiate (EAp e1 e2) heap env
   = statHAlloc heap2 (NAp a1 a2)
@@ -361,6 +366,7 @@ instantiate (ELet isRec defs body) heap env
   = instantiateLet isRec defs body heap env
 instantiate (ECase e alts) heap env
   = error "Can't instantiate case exprs"
+#endif
 
 showStack heap stack
   = iConcat [ iStr "Stk ["
@@ -464,6 +470,7 @@ data Node
 #endif
 
 showNode :: TiHeap -> Node -> ISeq
+#if __CLH_EXERCISE_2__ != 18
 showNode _ (NAp a1 a2)
   = iConcat [ iStr "NAp ", showAddrToSeq a1, iStr " ", showAddrToSeq a2 ]
 showNode _ (NSc scName argNames body) = iStr ("NSc " ++ scName)
@@ -472,6 +479,7 @@ showNode heap (NInd a)
   = iConcat [ iStr "NInd (", showNode heap (statHLookup heap a), iStr ")" ]
 showNode heap (NPrim name _)
   = iConcat [ iStr "NPrim ", iStr name ]
+#endif
 
 showStkNode heap (NAp funAddr argAddr)
   = iConcat [ iStr "NAp ", showFWAddr funAddr, iStr " ", showFWAddr argAddr
@@ -510,6 +518,7 @@ indStep (_ : stack, dump, heap, globals, stats) addr
   = (addr : stack, dump, heap, globals, stats)
 
 instantiateAndUpdate :: CoreExpr -> Addr -> TiHeap -> TiGlobals -> TiHeap
+#if __CLH_EXERCISE_2__ != 18
 instantiateAndUpdate (EAp e1 e2) updateAddr heap env
   = statHUpdate heap2 updateAddr (NAp a1 a2)
   where
@@ -527,9 +536,14 @@ instantiateAndUpdate (ELet isRec defs body) updateAddr heap env
   = instantiateAndUpdateLet isRec defs body updateAddr heap env
 instantiateAndUpdate (ECase e alts) updateAddr heap env
   = error "Can't instantiate case exprs"
+#endif
+#endif
 
+#if __CLH_EXERCISE_2__ >= 14
 instantiateAndUpdateConstr :: Int -> Int -> Addr -> TiHeap -> TiGlobals -> TiHeap
+#if __CLH_EXERCISE_2__ != 18
 instantiateAndUpdateConstr = error "Can't instantiate constructors yet"
+#endif
 
 instantiateAndUpdateLet :: IsRec -> Assoc Name CoreExpr -> CoreExpr -> Addr -> TiHeap -> TiGlobals -> TiHeap
 instantiateAndUpdateLet isRec defs body addr heap env = instantiateAndUpdate body addr heap' env'
@@ -556,6 +570,7 @@ scStep (stack, dump, heap, globals, stats) scName argNames body
 type TiDump = [TiStack]
 initialTiDump = []
 
+#if __CLH_EXERCISE_2__ != 18
 data Node
   = NAp Addr Addr
   | NSc Name [Name] CoreExpr
@@ -564,6 +579,7 @@ data Node
   | NPrim Name Primitive
 
 data Primitive = Neg | Add | Sub | Mul | Div
+#endif
 
 buildInitialHeap scDefs
   = (heap2, scAddrs ++ primAddrs)
@@ -583,6 +599,7 @@ allocatePrim heap (name, prim) = (heap', (name, addr))
   where
     (heap', addr) = statHAlloc heap (NPrim name prim)
 
+#if __CLH_EXERCISE_2__ != 18
 step state@(stack, dump, heap, globals, stats)
   = dispatch (statHLookup heap (head stack))
   where
@@ -593,6 +610,7 @@ step state@(stack, dump, heap, globals, stats)
     dispatch (NInd addr) = indStep state addr
     dispatch (NPrim _ prim)
       = tiStatIncPReds `applyToStats` primStep state prim
+#endif
 
 primStep :: TiState -> Primitive -> TiState
 #if __CLH_EXERCISE_2__ < 17
@@ -640,11 +658,13 @@ tiFinal ([], _, _, _, _) = error "Empty stack!"
 tiFinal _ = False
 
 #if __CLH_EXERCISE_2__ >= 17
+#if __CLH_EXERCISE_2__ != 18
 primStep state Neg = primNeg state
 primStep state Add = primArith state (+)
 primStep state Sub = primArith state (-)
 primStep state Mul = primArith state (*)
 primStep state Div = primArith state div
+#endif
 
 primArith :: TiState -> (Int -> Int -> Int) -> TiState
 primArith (stack, dump, heap, globals, stats) f
@@ -665,6 +685,157 @@ primArith (stack, dump, heap, globals, stats) f
     arg2IsDataNode = isDataNode arg2
     (NNum value1) = arg1
     (NNum value2) = arg2
+
+#if __CLH_EXERCISE_2__ == 18
+data Node
+  = NAp Addr Addr
+  | NSc Name [Name] CoreExpr
+  | NNum Int
+  | NInd Addr
+  | NPrim Name Primitive
+  | NData Int [Addr]
+  | NCase Addr [Addr]
+  | NAlter Int [Name] CoreExpr
+
+showNode _ (NAp a1 a2)
+  = iConcat [ iStr "NAp ", showAddrToSeq a1, iStr " ", showAddrToSeq a2 ]
+showNode _ (NSc scName argNames body) = iStr ("NSc " ++ scName)
+showNode _ (NNum n) = iStr "NNum " `iAppend` iNum n
+showNode heap (NInd a)
+  = iConcat [ iStr "NInd (", showNode heap (statHLookup heap a), iStr ")" ]
+showNode heap (NPrim name _)
+  = iConcat [ iStr "NPrim ", iStr name ]
+showNode heap (NData tag args)
+  = iConcat [ iStr "NData ", iNum tag, iStr ", ", iInterleave (iStr " ") (map showFWAddr args) ]
+showNode heap (NCase eAddr alterAddrs)
+  = iConcat [ iStr "NCase ", showFWAddr eAddr, iStr " of ", iInterleave (iStr " ") (map showFWAddr alterAddrs) ]
+showNode heap (NAlter tag argNames body)
+  = iConcat [ iStr "NAlter ", iNum tag, iStr ", ", iInterleave (iStr " ") (map iStr argNames) ]
+
+instantiate (ENum n) heap env = statHAlloc heap (NNum n)
+instantiate (EAp e1 e2) heap env
+  = statHAlloc heap2 (NAp a1 a2)
+  where
+    (heap1, a1) = instantiate e1 heap env
+    (heap2, a2) = instantiate e2 heap1 env
+instantiate (EVar v) heap env
+  = (heap, aLookup env v (error ("Undefined name " ++ v)))
+instantiate (EConstr tag arity) heap env
+  = instantiateConstr tag arity heap env
+instantiate (ELet isRec defs body) heap env
+  = instantiateLet isRec defs body heap env
+instantiate (ECase e alts) heap env
+  = instantiateCase e alts heap env
+
+instantiateCase :: CoreExpr -> [CoreAlter] -> TiHeap -> TiGlobals -> (TiHeap, Addr)
+instantiateCase e alts heap env
+  = statHAlloc heap'' (NCase eAddr altAddrs)
+  where
+    (heap', eAddr) = instantiate e heap env
+    (heap'', altAddrs) = mapAccumL allocateAlter heap' alts
+
+allocateAlter :: TiHeap -> CoreAlter -> (TiHeap, Addr)
+allocateAlter heap (tag, argNames, body) = statHAlloc heap (NAlter tag argNames body)
+
+instantiateAndUpdate (EAp e1 e2) updateAddr heap env
+  = statHUpdate heap2 updateAddr (NAp a1 a2)
+  where
+    (heap1, a1) = instantiate e1 heap env
+    (heap2, a2) = instantiate e2 heap1 env
+instantiateAndUpdate (ENum n) updateAddr heap env = statHUpdate heap updateAddr (NNum n)
+instantiateAndUpdate (EVar v) updateAddr heap env
+  = statHUpdate heap updateAddr (NInd vAddr)
+  where
+    vAddr = aLookup env v (error ("Undefined name " ++ v))
+instantiateAndUpdate (EConstr tag arity) updateAddr heap env
+  = instantiateAndUpdateConstr tag arity updateAddr heap env
+instantiateAndUpdate (ELet isRec defs body) updateAddr heap env
+  = instantiateAndUpdateLet isRec defs body updateAddr heap env
+instantiateAndUpdate (ECase e alts) updateAddr heap env
+  = instantiateAndUpdateCase e alts updateAddr heap env
+
+instantiateAndUpdateCase :: CoreExpr -> [CoreAlter] -> Addr -> TiHeap -> TiGlobals -> TiHeap
+instantiateAndUpdateCase e alts updateAddr heap env
+  = statHUpdate heap'' updateAddr (NCase eAddr altAddrs)
+  where
+    (heap', eAddr) = instantiate e heap env
+    (heap'', altAddrs) = mapAccumL allocateAlter heap' alts
+
+data Primitive
+  = Neg
+  | Add
+  | Sub
+  | Mul
+  | Div
+  | PrimConstr Int Int
+
+instantiateConstr tag arity heap env = (heap', addr)
+  where
+    (heap', addr) = statHAlloc heap (NPrim "Pack" (PrimConstr tag arity))
+instantiateAndUpdateConstr tag arity addr heap env = heap'
+  where
+    heap' = statHUpdate heap addr (NPrim "Pack" (PrimConstr tag arity))
+
+isDataNode (NNum n) = True
+isDataNode (NData tag args) = True
+isDataNode node = False
+
+step state@(stack, dump, heap, globals, stats)
+  = dispatch (statHLookup heap (head stack))
+  where
+    dispatch (NNum n) = numStep state n
+    dispatch (NAp a1 a2) = apStep state a1 a2
+    dispatch (NSc scName argNames body)
+      = tiStatIncScReds `applyToStats` scStep state scName argNames body
+    dispatch (NInd addr) = indStep state addr
+    dispatch (NPrim _ prim)
+      = tiStatIncPReds `applyToStats` primStep state prim
+    dispatch (NData tag args) = dataStep state tag args
+    dispatch (NCase eAddr alterAddrs) = caseStep state eAddr alterAddrs
+
+dataStep :: TiState -> Int -> [Addr] -> TiState
+dataStep (_ : [], stack : dump, heap, globals, stats) _ _
+  = (stack, dump, heap, globals, stats)
+dataStep (stack, _ : dump, heap, globals, stats) _ _
+  = error ("Wrong stack is detected : " ++ iDisplay (showStack heap stack))
+dataStep (_, dump, heap, globals, stats) _ _
+  = error ("Wrong dump is detected : " ++ iDisplay (iInterleave iNewline (map (showStack heap) dump)))
+
+caseStep :: TiState -> Addr -> [Addr] -> TiState
+caseStep (stack, dump, heap, globals, stats) eAddr alterAddrs
+  | isDataNode expr = (stack, dump, heap', globals, stats)
+  | otherwise = ([eAddr], stack : dump, heap, globals, stats)
+  where
+    rootAddr : stack' = stack
+    heap' = instantiateAndUpdate body rootAddr heap env
+    env = argBindings ++ globals
+
+    alters = map (statHLookup heap) alterAddrs
+    NAlter _ argNames body : _ = filter findAlter alters
+
+    expr = statHLookup heap eAddr
+    NData tag argAddrs = expr
+
+    argsLength = length argAddrs
+    argBindings = zip argNames argAddrs
+
+    findAlter (NAlter alterTag argNames _) = alterTag == tag && length argNames == argsLength
+
+primStep state Neg = primNeg state
+primStep state Add = primArith state (+)
+primStep state Sub = primArith state (-)
+primStep state Mul = primArith state (*)
+primStep state Div = primArith state div
+primStep state (PrimConstr tag arith) = primConstr state tag arith
+
+primConstr :: TiState -> Int -> Int -> TiState
+primConstr (stack, dump, heap, globals, stats) tag arith
+  = (stack'', dump, heap', globals, stats)
+  where
+    stack''@(rootAddr : stack') = drop arith stack
+    heap' = statHUpdate heap rootAddr (NData tag args)
+    args = getArgs heap stack
+#endif
 #endif
 #endif
 #endif
