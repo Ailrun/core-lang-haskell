@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
 module Language.TiMachine where
 
+import Debug.Trace
+
 import Data.ISeq
 import Data.List
 #if __CLH_EXERCISE_2__ >= 7
@@ -596,12 +598,11 @@ primStep state Neg = primNeg state
 primNeg :: TiState -> TiState
 primNeg (stack, dump, heap, globals, stats)
   | isDataNode arg = (stack', dump, heap', globals, stats)
-  | otherwise = (argAddr : [], stack : dump, heap, globals, stats)
+  | otherwise = (argAddr : [], stack' : dump, heap, globals, stats)
   where
     heap' = statHUpdate heap rootAddr (NNum (negate value))
 
-    rootAddr : _ = stack'
-    stack' = drop 1 stack
+    _ : stack'@(rootAddr : _) = stack
 
     argAddr : _ = getArgs heap stack
     arg = statHLookup heap argAddr
@@ -627,7 +628,7 @@ apStep (stack, dump, heap, globals, stats) a1 a2
       _ -> False
     arg = statHLookup heap a2
 
-tiFinal ([soleAddr], _, heap, _, _) = isDataNode (statHLookup heap soleAddr)
+tiFinal ([soleAddr], [], heap, _, _) = isDataNode (statHLookup heap soleAddr)
 tiFinal ([], _, _, _, _) = error "Empty stack!"
 tiFinal _ = False
 
