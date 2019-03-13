@@ -104,9 +104,11 @@ tiFinal _ = False
 #endif
 
 isDataNode :: Node -> Bool
+#if __CLH_EXERCISE_2__ < 21
 #if __CLH_EXERCISE_2__ != 18
 isDataNode (NNum n) = True
 isDataNode node = False
+#endif
 #endif
 
 step :: TiState -> TiState
@@ -170,8 +172,10 @@ instantiate (ECase e alts) heap env
 #endif
 
 instantiateConstr :: Int -> Int -> TiHeap -> TiGlobals -> (TiHeap, Addr)
+#if __CLH_EXERCISE_2__ < 21
 #if __CLH_EXERCISE_2__ != 18
 instantiateConstr = error "Can't instantiate constructors yet"
+#endif
 #endif
 
 instantiateLet :: IsRec -> Assoc Name CoreExpr -> CoreExpr -> TiHeap -> TiGlobals -> (TiHeap, Addr)
@@ -470,6 +474,7 @@ data Node
 #endif
 
 showNode :: TiHeap -> Node -> ISeq
+#if __CLH_EXERCISE_2__ < 21
 #if __CLH_EXERCISE_2__ != 18
 showNode _ (NAp a1 a2)
   = iConcat [ iStr "NAp ", showAddrToSeq a1, iStr " ", showAddrToSeq a2 ]
@@ -479,6 +484,7 @@ showNode heap (NInd a)
   = iConcat [ iStr "NInd (", showNode heap (statHLookup heap a), iStr ")" ]
 showNode heap (NPrim name _)
   = iConcat [ iStr "NPrim ", iStr name ]
+#endif
 #endif
 
 showStkNode heap (NAp funAddr argAddr)
@@ -541,8 +547,10 @@ instantiateAndUpdate (ECase e alts) updateAddr heap env
 
 #if __CLH_EXERCISE_2__ >= 14
 instantiateAndUpdateConstr :: Int -> Int -> Addr -> TiHeap -> TiGlobals -> TiHeap
+#if __CLH_EXERCISE_2__ < 21
 #if __CLH_EXERCISE_2__ != 18
 instantiateAndUpdateConstr = error "Can't instantiate constructors yet"
+#endif
 #endif
 
 instantiateAndUpdateLet :: IsRec -> Assoc Name CoreExpr -> CoreExpr -> Addr -> TiHeap -> TiGlobals -> TiHeap
@@ -570,6 +578,7 @@ scStep (stack, dump, heap, globals, stats) scName argNames body
 type TiDump = [TiStack]
 initialTiDump = []
 
+#if __CLH_EXERCISE_2__ < 21
 #if __CLH_EXERCISE_2__ != 18
 data Node
   = NAp Addr Addr
@@ -580,6 +589,7 @@ data Node
 
 data Primitive = Neg | Add | Sub | Mul | Div
 #endif
+#endif
 
 buildInitialHeap scDefs
   = (heap2, scAddrs ++ primAddrs)
@@ -588,17 +598,20 @@ buildInitialHeap scDefs
     (heap2, primAddrs) = mapAccumL allocatePrim heap1 primitives
 
 primitives :: Assoc Name Primitive
+#if __CLH_EXERCISE_2__ < 21
 primitives
   = [ ("negate", Neg)
     , ("+", Add), ("-", Sub)
     , ("*", Mul), ("/", Div)
     ]
+#endif
 
 allocatePrim :: TiHeap -> (Name, Primitive) -> (TiHeap, (Name, Addr))
 allocatePrim heap (name, prim) = (heap', (name, addr))
   where
     (heap', addr) = statHAlloc heap (NPrim name prim)
 
+#if __CLH_EXERCISE_2__ < 21
 #if __CLH_EXERCISE_2__ != 18
 step state@(stack, dump, heap, globals, stats)
   = dispatch (statHLookup heap (head stack))
@@ -610,6 +623,7 @@ step state@(stack, dump, heap, globals, stats)
     dispatch (NInd addr) = indStep state addr
     dispatch (NPrim _ prim)
       = tiStatIncPReds `applyToStats` primStep state prim
+#endif
 #endif
 
 primStep :: TiState -> Primitive -> TiState
@@ -658,6 +672,7 @@ tiFinal ([], _, _, _, _) = error "Empty stack!"
 tiFinal _ = False
 
 #if __CLH_EXERCISE_2__ >= 17
+#if __CLH_EXERCISE_2__ < 21
 #if __CLH_EXERCISE_2__ != 18
 primStep state Neg = primNeg state
 primStep state Add = primArith state (+)
@@ -665,8 +680,10 @@ primStep state Sub = primArith state (-)
 primStep state Mul = primArith state (*)
 primStep state Div = primArith state div
 #endif
+#endif
 
 primArith :: TiState -> (Int -> Int -> Int) -> TiState
+#if __CLH_EXERCISE_2__ < 21
 primArith (stack, dump, heap, globals, stats) f
   | arg1IsDataNode && arg2IsDataNode = (ap2Stack, dump, heap', globals, stats)
   | arg2IsDataNode = ([arg1Addr], ap1Stack : dump, heap, globals, stats)
@@ -685,6 +702,7 @@ primArith (stack, dump, heap, globals, stats) f
     arg2IsDataNode = isDataNode arg2
     (NNum value1) = arg1
     (NNum value2) = arg2
+#endif
 
 #if __CLH_EXERCISE_2__ == 18
 data Node
@@ -835,6 +853,157 @@ primConstr (stack, dump, heap, globals, stats) tag arith
     stack''@(rootAddr : stack') = drop arith stack
     heap' = statHUpdate heap rootAddr (NData tag args)
     args = getArgs heap stack
+#endif
+
+#if __CLH_EXERCISE_2__ >= 21
+data Node
+  = NAp Addr Addr
+  | NSc Name [Name] CoreExpr
+  | NNum Int
+  | NInd Addr
+  | NPrim Name Primitive
+  | NData Int [Addr]
+
+showNode _ (NAp a1 a2)
+  = iConcat [ iStr "NAp ", showAddrToSeq a1, iStr " ", showAddrToSeq a2 ]
+showNode _ (NSc scName argNames body) = iStr ("NSc " ++ scName)
+showNode _ (NNum n) = iStr "NNum " `iAppend` iNum n
+showNode heap (NInd a)
+  = iConcat [ iStr "NInd (", showNode heap (statHLookup heap a), iStr ")" ]
+showNode heap (NPrim name _)
+  = iConcat [ iStr "NPrim ", iStr name ]
+showNode heap (NData tag args)
+  = iConcat [ iStr "NData ", iNum tag, iStr ", ", iInterleave (iStr " ") (map showFWAddr args) ]
+
+data Primitive
+  = Neg
+  | Add
+  | Sub
+  | Mul
+  | Div
+  | PrimConstr Int Int
+  | If
+  | Greater
+  | GreaterEq
+  | Less
+  | LessEq
+  | Eq
+  | NotEq
+
+primitives
+  = [ ("negate", Neg)
+    , ("+", Add), ("-", Sub)
+    , ("*", Mul), ("/", Div)
+    , ("if", If)
+    , (">", Greater), (">=", GreaterEq)
+    , ("<", Less), ("<=", LessEq)
+    , ("==", Eq), ("~=", NotEq)
+    ]
+
+instantiateConstr tag arity heap env = (heap', addr)
+  where
+    (heap', addr) = statHAlloc heap (NPrim "Pack" (PrimConstr tag arity))
+instantiateAndUpdateConstr tag arity addr heap env = heap'
+  where
+    heap' = statHUpdate heap addr (NPrim "Pack" (PrimConstr tag arity))
+
+isDataNode (NNum n) = True
+isDataNode (NData tag args) = True
+isDataNode node = False
+
+step state@(stack, dump, heap, globals, stats)
+  = dispatch (statHLookup heap (head stack))
+  where
+    dispatch (NNum n) = numStep state n
+    dispatch (NAp a1 a2) = apStep state a1 a2
+    dispatch (NSc scName argNames body)
+      = tiStatIncScReds `applyToStats` scStep state scName argNames body
+    dispatch (NInd addr) = indStep state addr
+    dispatch (NPrim _ prim)
+      = tiStatIncPReds `applyToStats` primStep state prim
+    dispatch (NData tag args) = dataStep state tag args
+
+dataStep :: TiState -> Int -> [Addr] -> TiState
+dataStep (_ : [], stack : dump, heap, globals, stats) _ _
+  = (stack, dump, heap, globals, stats)
+dataStep (stack, _ : dump, heap, globals, stats) _ _
+  = error ("Wrong stack is detected : " ++ iDisplay (showStack heap stack))
+dataStep (_, dump, heap, globals, stats) _ _
+  = error ("Wrong dump is detected : " ++ iDisplay (iInterleave iNewline (map (showStack heap) dump)))
+
+primStep state Neg = primNeg state
+primStep state Add = primArith state (+)
+primStep state Sub = primArith state (-)
+primStep state Mul = primArith state (*)
+primStep state Div = primArith state div
+primStep state (PrimConstr tag arith) = primConstr state tag arith
+primStep state If = primIf state
+primStep state Greater = primComp state (>)
+primStep state GreaterEq = primComp state (>=)
+primStep state Less = primComp state (<)
+primStep state LessEq = primComp state (<=)
+primStep state Eq = primComp state (==)
+primStep state NotEq = primComp state (/=)
+
+primConstr :: TiState -> Int -> Int -> TiState
+primConstr (stack, dump, heap, globals, stats) tag arith
+  = (stack'', dump, heap', globals, stats)
+  where
+    stack''@(rootAddr : stack') = drop arith stack
+    heap' = statHUpdate heap rootAddr (NData tag args)
+    args = getArgs heap stack
+
+primIf :: TiState -> TiState
+primIf (stack, dump, heap, globals, stats)
+  | isDataNode cond = (rootStack, dump, heap', globals, stats)
+  | otherwise = ([condAddr], ifApStack : dump, heap, globals, stats)
+  where
+    heap' = statHUpdate heap rootAddr (NInd result)
+
+    _ : ifApStack = stack
+    _ : _ : rootStack = ifApStack
+    rootAddr : _ = rootStack
+
+    condAddr : trueAddr : falseAddr : _ = getArgs heap stack
+    cond = statHLookup heap condAddr
+    NData tag args = cond
+
+    result
+      | length args > 0 = error "Wrong type"
+      | tag == 2 = trueAddr
+      | tag == 1 = falseAddr
+      | otherwise = error "Wrong type"
+
+primArith state f = primDyadic state nodeF
+  where
+    nodeF (NNum v1) (NNum v2) = NNum (f v1 v2)
+    nodeF _ _ = error "Wrong type"
+
+primComp :: TiState -> (Int -> Int -> Bool) -> TiState
+primComp state f = primDyadic state nodeF
+  where
+    nodeF (NNum v1) (NNum v2)
+      | f v1 v2 = NData 2 []
+      | otherwise = NData 1 []
+    nodeF _ _ = error "Wrong type"
+
+primDyadic :: TiState -> (Node -> Node -> Node) -> TiState
+primDyadic (stack, dump, heap, globals, stats) f
+  | arg1IsDataNode && arg2IsDataNode = (ap2Stack, dump, heap', globals, stats)
+  | arg2IsDataNode = ([arg1Addr], ap1Stack : dump, heap, globals, stats)
+  | otherwise = ([arg2Addr], ap2Stack : dump, heap, globals, stats)
+  where
+    heap' = statHUpdate heap rootAddr (f arg1 arg2)
+
+    _ : ap1Stack = stack
+    _ : ap2Stack = ap1Stack
+    rootAddr : _ = ap2Stack
+
+    arg1Addr : arg2Addr : _ = getArgs heap stack
+    arg1 = statHLookup heap arg1Addr
+    arg2 = statHLookup heap arg2Addr
+    arg1IsDataNode = isDataNode arg1
+    arg2IsDataNode = isDataNode arg2
 #endif
 #endif
 #endif
