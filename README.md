@@ -10,32 +10,32 @@ This repository is about an implementation of a simple functional language based
 <summary>Exercises in Chapter 1</summary>
 <p>
 
-| Name          | Files                                                      |
-|---------------|------------------------------------------------------------|
-| Exercise 1.1  | /exercises/exercise1-1.xls, /src/Language/PrettyPrinter.hs |
-| Exercise 1.2  | /src/Data/ISeq.hs                                          |
-| Exercise 1.3  | /src/Language/PrettyPrinter.hs                             |
-| Exercise 1.4  | /exercises/exercise1-4.xls, /src/Language/PrettyPrinter.hs |
-| Exercise 1.5  | /src/Data/ISeq.hs                                          |
-| Exercise 1.6  | /src/Data/ISeq.hs                                          |
-| Exercise 1.7  | /src/Data/ISeq.hs                                          |
-| Exercise 1.8  | /src/Language/PrettyPrinter.hs                             |
-| Exercise 1.9  | /src/Language/Parser.hs                                    |
-| Exercise 1.10 | /src/Language/Parser.hs                                    |
-| Exercise 1.11 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.12 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.13 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.14 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.15 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.16 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.17 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.18 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.19 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.20 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.21 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.22 | /exercises/exercise1-22.md                                 |
-| Exercise 1.23 | /src/Lanugage/Parser.hs                                    |
-| Exercise 1.24 | /src/Lanugage/Parser.hs                                    |
+| Name          | Files                                                       |
+|---------------|-------------------------------------------------------------|
+| Exercise 1.1  | /exercises/exercise1-01.xls, /src/Language/PrettyPrinter.hs |
+| Exercise 1.2  | /src/Data/ISeq.hs                                           |
+| Exercise 1.3  | /src/Language/PrettyPrinter.hs                              |
+| Exercise 1.4  | /exercises/exercise1-04.xls, /src/Language/PrettyPrinter.hs |
+| Exercise 1.5  | /src/Data/ISeq.hs                                           |
+| Exercise 1.6  | /src/Data/ISeq.hs                                           |
+| Exercise 1.7  | /src/Data/ISeq.hs                                           |
+| Exercise 1.8  | /src/Language/PrettyPrinter.hs                              |
+| Exercise 1.9  | /src/Language/Parser.hs                                     |
+| Exercise 1.10 | /src/Language/Parser.hs                                     |
+| Exercise 1.11 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.12 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.13 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.14 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.15 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.16 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.17 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.18 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.19 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.20 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.21 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.22 | /exercises/exercise1-22.md                                  |
+| Exercise 1.23 | /src/Lanugage/Parser.hs                                     |
+| Exercise 1.24 | /src/Lanugage/Parser.hs                                     |
 
 </p>
 </details>
@@ -48,15 +48,15 @@ This repository is about an implementation of a simple functional language based
 
 | Name          | Files                                                    |
 |---------------|----------------------------------------------------------|
-| Exercise 2.1  | /exercises/exercise2-1.md                                |
-| Exercise 2.2  | /exercises/exercise2-2.md                                |
+| Exercise 2.1  | /exercises/exercise2-01.md                               |
+| Exercise 2.2  | /exercises/exercise2-02.md                               |
 | Exercise 2.3  | _skipped_                                                |
 | Exercise 2.4  | /src/Language/Interpreter.hs                             |
 | Exercise 2.5  | /src/Language/Interpreter.hs                             |
 | Exercise 2.6  | /src/Language/Interpreter.hs                             |
 | Exercise 2.7  | /src/Language/Interpreter.hs                             |
-| Exercise 2.8  | /exercises/exercise2-8.md                                |
-| Exercise 2.9  | /exercises/exercise2-9.md                                |
+| Exercise 2.8  | /exercises/exercise2-08.md                               |
+| Exercise 2.9  | /exercises/exercise2-09.md                               |
 | Exercise 2.10 | /src/Language/Interpreter.hs                             |
 | Exercise 2.11 | /src/Language/Interpreter.hs                             |
 | Exercise 2.12 | /exercises/exercise2-12.md                               |

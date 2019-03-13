@@ -10,7 +10,7 @@ prettyPrint :: CoreProgram -> String
 -- |
 -- Following codes show bad performances,
 -- therefore they are impractical.
--- See </exercises/exercise1-1.xls exercise1-1.xls> for data.
+-- See </exercises/exercise1-01.xls exercise1-01.xls> for data.
 #if __CLH_EXERCISE_1__ <= 1
 prettyPrintExpr :: CoreExpr -> String
 prettyPrintExpr (ENum n) = show n
@@ -126,7 +126,7 @@ prettyPrintSupercombinatorDefinition (name, vars, expr)
 
 -- |
 -- 'prettyPrintExpr' with 'ISep' works much faster than one without it.
--- See </exercises/exercise1-4.xls exercise1-4.xls> for data.
+-- See </exercises/exercise1-04.xls exercise1-04.xls> for data.
 #if __CLH_EXERCISE_1__ == 4
 makeMultiAp :: Int -> CoreExpr -> CoreExpr -> CoreExpr
 makeMultiAp n e1 e2 = foldl EAp e1 (take n e2s)
