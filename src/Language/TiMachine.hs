@@ -591,7 +591,9 @@ step state@(stack, dump, heap, globals, stats)
     dispatch (NPrim _ prim) = primStep state prim
 
 primStep :: TiState -> Primitive -> TiState
+#if __CLH_EXERCISE_2__ < 17
 primStep state Neg = primNeg state
+#endif
 
 -- Do we need to check stack length?
 -- It should be longer than or equal to 2
@@ -632,6 +634,33 @@ tiFinal ([soleAddr], [], heap, _, _) = isDataNode (statHLookup heap soleAddr)
 tiFinal ([], _, _, _, _) = error "Empty stack!"
 tiFinal _ = False
 
+#if __CLH_EXERCISE_2__ >= 17
+primStep state Neg = primNeg state
+primStep state Add = primArith state (+)
+primStep state Sub = primArith state (-)
+primStep state Mul = primArith state (*)
+primStep state Div = primArith state div
+
+primArith :: TiState -> (Int -> Int -> Int) -> TiState
+primArith (stack, dump, heap, globals, stats) f
+  | arg1IsDataNode && arg2IsDataNode = (ap2Stack, dump, heap', globals, stats)
+  | arg2IsDataNode = ([arg1Addr], ap1Stack : dump, heap, globals, stats)
+  | otherwise = ([arg2Addr], ap2Stack : dump, heap, globals, stats)
+  where
+    heap' = statHUpdate heap rootAddr (NNum (f value1 value2))
+
+    _ : ap1Stack = stack
+    _ : ap2Stack = ap1Stack
+    rootAddr : _ = ap2Stack
+
+    arg1Addr : arg2Addr : _ = getArgs heap stack
+    arg1 = statHLookup heap arg1Addr
+    arg2 = statHLookup heap arg2Addr
+    arg1IsDataNode = isDataNode arg1
+    arg2IsDataNode = isDataNode arg2
+    (NNum value1) = arg1
+    (NNum value2) = arg2
+#endif
 #endif
 #endif
 #endif
