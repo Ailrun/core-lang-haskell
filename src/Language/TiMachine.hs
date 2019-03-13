@@ -599,12 +599,13 @@ primStep state Neg = primNeg state
 -- It should be longer than or equal to 2
 primNeg :: TiState -> TiState
 primNeg (stack, dump, heap, globals, stats)
-  | isDataNode arg = (stack', dump, heap', globals, stats)
-  | otherwise = (argAddr : [], stack' : dump, heap, globals, stats)
+  | isDataNode arg = (apStack, dump, heap', globals, stats)
+  | otherwise = ([argAddr], apStack : dump, heap, globals, stats)
   where
     heap' = statHUpdate heap rootAddr (NNum (negate value))
 
-    _ : stack'@(rootAddr : _) = stack
+    _ : apStack = stack
+    rootAddr : _ = apStack
 
     argAddr : _ = getArgs heap stack
     arg = statHLookup heap argAddr
