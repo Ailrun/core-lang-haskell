@@ -336,7 +336,8 @@ step state@(stack, dump, heap, globals, stats)
   where
     dispatch (NNum n) = numStep state n
     dispatch (NAp a1 a2) = apStep state a1 a2
-    dispatch (NSc scName argNames body) = scStep state scName argNames body
+    dispatch (NSc scName argNames body)
+      = tiStatIncScReds `applyToStats` scStep state scName argNames body
 #endif
 
 getArgs heap (_ : stack)
@@ -419,7 +420,7 @@ showHeap heap
 
 #if __CLH_EXERCISE_2__ < 13
 scStep (stack, dump, heap, globals, stats) scName argNames body
-  | argsLength + 1 <= length stack = (stack', dump, heap', globals, tiStatIncScReds stats)
+  | argsLength + 1 <= length stack = (stack', dump, heap', globals, stats)
   where
     stack' = resultAddr : drop (argsLength + 1) stack
     (heap', resultAddr) = instantiate body heap env
@@ -480,7 +481,7 @@ showStkNode heap node = showNode heap node
 
 #if __CLH_EXERCISE_2__ < 14
 scStep (stack, dump, heap, globals, stats) scName argNames body
-  | argsLength + 1 <= length stack = (stack'', dump, heap'', globals, tiStatIncScReds stats)
+  | argsLength + 1 <= length stack = (stack'', dump, heap'', globals, stats)
   where
     rootAddr : stack' = drop argsLength stack
     stack'' = resultAddr : stack'
@@ -499,7 +500,8 @@ step state@(stack, dump, heap, globals, stats)
   where
     dispatch (NNum n) = numStep state n
     dispatch (NAp a1 a2) = apStep state a1 a2
-    dispatch (NSc scName argNames body) = scStep state scName argNames body
+    dispatch (NSc scName argNames body)
+      = tiStatIncScReds `applyToStats` scStep state scName argNames body
     dispatch (NInd addr) = indStep state addr
 #endif
 
@@ -539,7 +541,7 @@ instantiateAndUpdateLet isRec defs body addr heap env = instantiateAndUpdate bod
     env' = defBindings ++ env
 
 scStep (stack, dump, heap, globals, stats) scName argNames body
-  | argsLength + 1 <= length stack = (stack'', dump, heap', globals, tiStatIncScReds stats)
+  | argsLength + 1 <= length stack = (stack'', dump, heap', globals, stats)
   where
     rootAddr : stack' = drop argsLength stack
     stack'' = rootAddr : stack'
@@ -586,9 +588,11 @@ step state@(stack, dump, heap, globals, stats)
   where
     dispatch (NNum n) = numStep state n
     dispatch (NAp a1 a2) = apStep state a1 a2
-    dispatch (NSc scName argNames body) = scStep state scName argNames body
+    dispatch (NSc scName argNames body)
+      = tiStatIncScReds `applyToStats` scStep state scName argNames body
     dispatch (NInd addr) = indStep state addr
-    dispatch (NPrim _ prim) = primStep state prim
+    dispatch (NPrim _ prim)
+      = tiStatIncPReds `applyToStats` primStep state prim
 
 primStep :: TiState -> Primitive -> TiState
 #if __CLH_EXERCISE_2__ < 17
