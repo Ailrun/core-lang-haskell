@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP #-}
-module Language.Interpreter where
+module Language.TiMachine where
 
 import Data.ISeq
 import Data.List
