@@ -645,7 +645,7 @@ primNeg (stack, dump, heap, globals, stats)
 
     argAddr : _ = getArgs heap stack
     arg = statHLookup heap argAddr
-    (NNum value) = arg
+    NNum value = arg
 
 numStep (_ : [], stack : dump, heap, globals, stats) _
   = (stack, dump, heap, globals, stats)
@@ -700,8 +700,8 @@ primArith (stack, dump, heap, globals, stats) f
     arg2 = statHLookup heap arg2Addr
     arg1IsDataNode = isDataNode arg1
     arg2IsDataNode = isDataNode arg2
-    (NNum value1) = arg1
-    (NNum value2) = arg2
+    NNum value1 = arg1
+    NNum value2 = arg2
 #endif
 
 #if __CLH_EXERCISE_2__ == 18
@@ -962,7 +962,11 @@ primIf (stack, dump, heap, globals, stats)
   | isDataNode cond = (rootStack, dump, heap', globals, stats)
   | otherwise = ([condAddr], ifApStack : dump, heap, globals, stats)
   where
-    heap' = statHUpdate heap rootAddr (NInd result)
+    heap'
+      | length args /= 0 = error "Wrong type"
+      | tag == 2 = statHUpdate heap rootAddr (NInd trueAddr)
+      | tag == 1 = statHUpdate heap rootAddr (NInd falseAddr)
+      | otherwise = error "Wrong type"
 
     _ : ifApStack = stack
     _ : _ : rootStack = ifApStack
@@ -971,12 +975,6 @@ primIf (stack, dump, heap, globals, stats)
     condAddr : trueAddr : falseAddr : _ = getArgs heap stack
     cond = statHLookup heap condAddr
     NData tag args = cond
-
-    result
-      | length args > 0 = error "Wrong type"
-      | tag == 2 = trueAddr
-      | tag == 1 = falseAddr
-      | otherwise = error "Wrong type"
 
 primArith state f = primDyadic state nodeF
   where
