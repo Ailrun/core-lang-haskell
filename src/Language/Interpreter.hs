@@ -435,7 +435,7 @@ instantiateDef env heap (name, body)
 #if __CLH_EXERCISE_2__ >= 11
 instantiateLet isRec defs body heap env = instantiate body heap' env'
   where
-    (heap', defBindings) = mapAccumL (instantiateDef env') heap defs
+    (heap', defBindings) = mapAccumL allocateDef heap defs
     allocateDef
       | isRec = instantiateDef env'
       | otherwise = instantiateDef env
@@ -453,7 +453,8 @@ showNode _ (NAp a1 a2)
   = iConcat [ iStr "NAp ", showAddrToSeq a1, iStr " ", showAddrToSeq a2 ]
 showNode _ (NSc scName argNames body) = iStr ("NSc " ++ scName)
 showNode _ (NNum n) = iStr "NNum " `iAppend` iNum n
-showNode heap (NInd a) = showNode heap (statHLookup heap a)
+showNode heap (NInd a)
+  = iConcat [ iStr "NInd (", showNode heap (statHLookup heap a), iStr ")" ]
 
 showStkNode heap (NAp funAddr argAddr)
   = iConcat [ iStr "NAp ", showFWAddr funAddr, iStr " ", showFWAddr argAddr
