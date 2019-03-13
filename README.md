@@ -46,14 +46,22 @@ This repository is about an implementation of a simple functional language based
 <summary>Exercises in Chapter 2</summary>
 <p>
 
-| Name          | Files                              |
-|---------------|------------------------------------|
-| Exercise 2.1  | /exercises/exercise2-1.md          |
-| Exercise 2.2  | /exercises/exercise2-2.md          |
-| Exercise 2.3  | _skipped_                          |
-| Exercise 2.4  | /src/Language/Interpreter.hs |
-| Exercise 2.5  | /src/Language/Interpreter.hs |
-| Exercise 2.6  | /src/Language/Interpreter.hs |
+| Name          | Files                                                    |
+|---------------|----------------------------------------------------------|
+| Exercise 2.1  | /exercises/exercise2-1.md                                |
+| Exercise 2.2  | /exercises/exercise2-2.md                                |
+| Exercise 2.3  | _skipped_                                                |
+| Exercise 2.4  | /src/Language/Interpreter.hs                             |
+| Exercise 2.5  | /src/Language/Interpreter.hs                             |
+| Exercise 2.6  | /src/Language/Interpreter.hs                             |
+| Exercise 2.7  | /src/Language/Interpreter.hs                             |
+| Exercise 2.8  | /exercises/exercise2-8.md                                |
+| Exercise 2.9  | /exercises/exercise2-9.md                                |
+| Exercise 2.10 | /src/Language/Interpreter.hs                             |
+| Exercise 2.11 | /src/Language/Interpreter.hs                             |
+| Exercise 2.12 | /exercises/exercise2-12.md                               |
+| Exercise 2.13 | /src/Language/Interpreter.hs, /exercises/exercise2-13.md |
+| Exercise 2.14 | /src/Language/Interpreter.hs                             |
 
 </p>
 </details>
