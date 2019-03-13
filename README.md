@@ -66,6 +66,7 @@ This repository is about an implementation of a simple functional language based
 | Exercise 2.16 | /src/Language/TiMachine.hs                             |
 | Exercise 2.17 | /src/Language/TiMachine.hs                             |
 | Exercise 2.18 | /src/Language/TiMachine.hs, /exercises/exercise2-18.md |
+| Exercise 2.19 | /exercises/exercise2-19.md                             |
 
 </p>
 </details>
