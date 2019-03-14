@@ -1,8 +1,6 @@
 {-# LANGUAGE CPP #-}
 module Language.TiMachine where
 
-import Debug.Trace
-
 import Data.ISeq
 import Data.List
 #if __CLH_EXERCISE_2__ >= 7
@@ -105,7 +103,7 @@ doAdmin = applyToStats tiStatIncSteps
 tiFinal :: TiState -> Bool
 #if __CLH_EXERCISE_2__ < 7
 tiFinal ([soleAddr], _, heap, _, _) = isDataNode (hLookup heap soleAddr)
-tiFinal ([], _, _, _, _) = error "Empty stack!"
+tiFinal ([], _, _, _, _) = error "Empty stack is dectected"
 tiFinal _ = False
 #endif
 
@@ -155,8 +153,10 @@ getArgs heap (_ : stack)
   = map getArg stack
   where
     getArg a
-      = let (NAp fun arg) = hLookup heap a
-        in arg
+      = case hLookup heap a of
+          NAp _ arg -> arg
+          _ -> error "Cannot get arg from non-application node"
+getArgs _ _ = error "Cannot get args from empty stack"
 #endif
 
 instantiate :: CoreExpr -> TiHeap -> TiGlobals -> (TiHeap, Addr)
@@ -277,14 +277,13 @@ showHeap heap
 #if __CLH_EXERCISE_2__ >= 6
 scStep (stack, dump, heap, globals, stats) scName argNames body
   | argsLength + 1 <= length stack = (stack', dump, heap', globals, stats)
+  | otherwise = error ("Two few arguments are provided to the function " ++ scName)
   where
     stack' = resultAddr : drop (argsLength + 1) stack
     (heap', resultAddr) = instantiate body heap env
     env = argBindings ++ globals
     argBindings = zip argNames (getArgs heap stack)
     argsLength = length argNames
-scStep (stack, dump, heap, globals, stats) scName argNames body
-  = error ("Two few arguments are provided to the function " ++ scName)
 #endif
 #endif
 
@@ -337,8 +336,8 @@ doAdmin state@(stack, _, _, _, stats)
   = applyToStats (updateMaxStackDepth . tiStatIncSteps) state
   where
     updateMaxStackDepth
-      | stackDepth > statMaxStackDepth = tiStatSetMaxStackDepth stackDepth
-      | otherwise = id
+      | stackDepth <= statMaxStackDepth = id
+      | otherwise = tiStatSetMaxStackDepth stackDepth
 
     stackDepth = length stack
     statMaxStackDepth = tiStatGetMaxStackDepth stats
@@ -346,7 +345,7 @@ doAdmin state@(stack, _, _, _, stats)
 
 #if __CLH_EXERCISE_2__ < 16
 tiFinal ([soleAddr], _, heap, _, _) = isDataNode (statHLookup heap soleAddr)
-tiFinal ([], _, _, _, _) = error "Empty stack!"
+tiFinal ([], _, _, _, _) = error "Empty stack is dectected"
 tiFinal _ = False
 #endif
 
@@ -364,8 +363,10 @@ getArgs heap (_ : stack)
   = map getArg stack
   where
     getArg a
-      = let (NAp fun arg) = statHLookup heap a
-        in arg
+      = case statHLookup heap a of
+          NAp _ arg -> arg
+          _ -> error "Cannot get arg from non-application node"
+getArgs _ _ = error "Cannot get args from empty stack"
 
 #if __CLH_EXERCISE_2__ != 18
 instantiate (ENum n) heap env = statHAlloc heap (NNum n)
@@ -445,14 +446,13 @@ showHeap heap
 #if __CLH_EXERCISE_2__ < 13
 scStep (stack, dump, heap, globals, stats) scName argNames body
   | argsLength + 1 <= length stack = (stack', dump, heap', globals, stats)
+  | otherwise = error ("Two few arguments are provided to the function " ++ scName)
   where
     stack' = resultAddr : drop (argsLength + 1) stack
     (heap', resultAddr) = instantiate body heap env
     env = argBindings ++ globals
     argBindings = zip argNames (getArgs heap stack)
     argsLength = length argNames
-scStep (stack, dump, heap, globals, stats) scName argNames body
-  = error ("Two few arguments are provided to the function " ++ scName)
 #endif
 
 #if __CLH_EXERCISE_2__ >= 10
@@ -464,6 +464,7 @@ instantiateLet isRec defs body heap env
     env' = defBindings ++ env
 #endif
 
+instantiateDef :: TiGlobals -> TiHeap -> (Name, CoreExpr) -> (TiHeap, (Name, Addr))
 instantiateDef env heap (name, body)
   = (heap', (name, addr))
   where
@@ -473,9 +474,7 @@ instantiateDef env heap (name, body)
 instantiateLet isRec defs body heap env = instantiate body heap' env'
   where
     (heap', defBindings) = mapAccumL allocateDef heap defs
-    allocateDef
-      | isRec = instantiateDef env'
-      | otherwise = instantiateDef env
+    allocateDef = instantiateDef (if isRec then env' else env)
     env' = defBindings ++ env
 
 #if __CLH_EXERCISE_2__ >= 13
@@ -488,17 +487,13 @@ data Node
 #endif
 
 showNode :: TiHeap -> Node -> ISeq
-#if __CLH_EXERCISE_2__ < 21
-#if __CLH_EXERCISE_2__ != 18
+#if __CLH_EXERCISE_2__ < 16
 showNode _ (NAp a1 a2)
   = iConcat [ iStr "NAp ", showAddrToSeq a1, iStr " ", showAddrToSeq a2 ]
 showNode _ (NSc scName argNames body) = iStr ("NSc " ++ scName)
 showNode _ (NNum n) = iStr "NNum " `iAppend` iNum n
 showNode heap (NInd a)
   = iConcat [ iStr "NInd (", showNode heap (statHLookup heap a), iStr ")" ]
-showNode heap (NPrim name _)
-  = iConcat [ iStr "NPrim ", iStr name ]
-#endif
 #endif
 
 showStkNode heap (NAp funAddr argAddr)
@@ -510,6 +505,7 @@ showStkNode heap node = showNode heap node
 #if __CLH_EXERCISE_2__ < 14
 scStep (stack, dump, heap, globals, stats) scName argNames body
   | argsLength + 1 <= length stack = (stack'', dump, heap'', globals, stats)
+  | otherwise = error ("Two few arguments are provided to the function " ++ scName)
   where
     rootAddr : stack' = drop argsLength stack
     stack'' = resultAddr : stack'
@@ -518,8 +514,6 @@ scStep (stack, dump, heap, globals, stats) scName argNames body
     env = argBindings ++ globals
     argBindings = zip argNames (getArgs heap stack)
     argsLength = length argNames
-scStep (stack, dump, heap, globals, stats) scName argNames body
-  = error ("Two few arguments are provided to the function " ++ scName)
 #endif
 
 #if __CLH_EXERCISE_2__ < 16
@@ -537,6 +531,7 @@ indStep :: TiState -> Addr -> TiState
 #if __CLH_EXERCISE_2__ < 26
 indStep (_ : stack, dump, heap, globals, stats) addr
   = (addr : stack, dump, heap, globals, stats)
+indStep _ _ = error "Empty stack for indirection is detected"
 #endif
 
 instantiateAndUpdate :: CoreExpr -> Addr -> TiHeap -> TiGlobals -> TiHeap
@@ -573,23 +568,19 @@ instantiateAndUpdateLet :: IsRec -> Assoc Name CoreExpr -> CoreExpr -> Addr -> T
 instantiateAndUpdateLet isRec defs body addr heap env = instantiateAndUpdate body addr heap' env'
   where
     (heap', defBindings) = mapAccumL allocateDef heap defs
-    allocateDef
-      | isRec = instantiateDef env'
-      | otherwise = instantiateDef env
+    allocateDef = instantiateDef (if isRec then env' else env)
     env' = defBindings ++ env
 
 #if __CLH_EXERCISE_2__ < 26
 scStep (stack, dump, heap, globals, stats) scName argNames body
-  | argsLength + 1 <= length stack = (stack'', dump, heap', globals, stats)
+  | argsLength + 1 <= length stack = (stack', dump, heap', globals, stats)
+  | otherwise = error ("Two few arguments are provided to the function " ++ scName)
   where
-    rootAddr : stack' = drop argsLength stack
-    stack'' = rootAddr : stack'
+    stack'@(rootAddr : _) = drop argsLength stack
     heap' = instantiateAndUpdate body rootAddr heap env
     env = argBindings ++ globals
     argBindings = zip argNames (getArgs heap stack)
     argsLength = length argNames
-scStep (stack, dump, heap, globals, stats) scName argNames body
-  = error ("Two few arguments are provided to the function " ++ scName)
 #endif
 
 #if __CLH_EXERCISE_2__ >= 16
@@ -651,44 +642,57 @@ primStep state Neg = primNeg state
 
 -- Do we need to check stack length?
 -- It should be longer than or equal to 2
-#if __CLH_EXERCISE_2__ < 26
 primNeg :: TiState -> TiState
-primNeg (stack, dump, heap, globals, stats)
-  | isDataNode arg = (apStack, dump, heap', globals, stats)
-  | otherwise = ([argAddr], apStack : dump, heap, globals, stats)
+#if __CLH_EXERCISE_2__ < 26
+#if __CLH_EXERCISE_2__ < 21
+#if __CLH_EXERCISE_2__ != 18
+primNeg (stack@(_ : _ : _), dump, heap, globals, stats)
+  | isDataNode arg = (negApStack, dump, heap', globals, stats)
+  | otherwise = ([argAddr], negApStack : dump, heap, globals, stats)
   where
-    heap' = statHUpdate heap rootAddr (NNum (negate value))
+    _ : negApStack@(rootAddr : _) = stack
 
-    _ : apStack = stack
-    rootAddr : _ = apStack
+    heap' = statHUpdate heap rootAddr (NNum (negate value))
 
     argAddr : _ = getArgs heap stack
     arg = statHLookup heap argAddr
     NNum value = arg
+primNeg _ = error "Wrong stack for negate is detected"
+#endif
+#endif
 
-numStep (_ : [], stack : dump, heap, globals, stats) _
+numStep ([_], stack : dump, heap, globals, stats) _
   = (stack, dump, heap, globals, stats)
-numStep (stack, _ : dump, heap, globals, stats) _
+numStep (stack, _ : _, heap, _, _) _
   = error ("Wrong stack is detected : " ++ iDisplay (showStack heap stack))
-numStep (_, dump, heap, globals, stats) _
+numStep (_, dump, heap, _, _) _
   = error ("Wrong dump is detected : " ++ iDisplay (iInterleave iNewline (map (showStack heap) dump)))
 
-apStep (stack, dump, heap, globals, stats) a1 a2
-  | isInd = (stack, dump, heap', globals, stats)
-  | otherwise = (a1 : stack, dump, heap, globals, stats)
+apStep (stack@(topAddr : _), dump, heap, globals, stats) a1 a2
+  = case arg of
+      NInd a3 -> (stack, dump, makeHeap a3, globals, stats)
+      _ -> (a1 : stack, dump, heap, globals, stats)
   where
-    topAddr : _ = stack
-    heap' = case arg of
-      NInd a3 -> statHUpdate heap topAddr (NAp a1 a3)
-      _ -> heap
-    isInd = case arg of
-      NInd _ -> True
-      _ -> False
+    makeHeap = statHUpdate heap topAddr . NAp a1
     arg = statHLookup heap a2
+apStep _ _ _ = error "Empty stack for application is dectected"
 
 tiFinal ([soleAddr], [], heap, _, _) = isDataNode (statHLookup heap soleAddr)
-tiFinal ([], _, _, _, _) = error "Empty stack!"
+tiFinal ([], _, _, _, _) = error "Empty stack is dectected"
 tiFinal _ = False
+#endif
+
+#if __CLH_EXERCISE_2__ < 21
+#if __CLH_EXERCISE_2__ != 18
+showNode _ (NAp a1 a2)
+  = iConcat [ iStr "NAp ", showAddrToSeq a1, iStr " ", showAddrToSeq a2 ]
+showNode _ (NSc scName argNames body) = iStr ("NSc " ++ scName)
+showNode _ (NNum n) = iStr "NNum " `iAppend` iNum n
+showNode heap (NInd a)
+  = iConcat [ iStr "NInd (", showNode heap (statHLookup heap a), iStr ")" ]
+showNode heap (NPrim name _)
+  = iConcat [ iStr "NPrim ", iStr name ]
+#endif
 #endif
 
 #if __CLH_EXERCISE_2__ >= 17
@@ -704,7 +708,8 @@ primStep state Div = primArith state div
 
 primArith :: TiState -> (Int -> Int -> Int) -> TiState
 #if __CLH_EXERCISE_2__ < 21
-primArith (stack, dump, heap, globals, stats) f
+#if __CLH_EXERCISE_2__ != 18
+primArith (stack@(_ : _ : _ : _), dump, heap, globals, stats) f
   | arg1IsDataNode && arg2IsDataNode = (ap2Stack, dump, heap', globals, stats)
   | arg2IsDataNode = ([arg1Addr], ap1Stack : dump, heap, globals, stats)
   | otherwise = ([arg2Addr], ap2Stack : dump, heap, globals, stats)
@@ -722,6 +727,8 @@ primArith (stack, dump, heap, globals, stats) f
     arg2IsDataNode = isDataNode arg2
     NNum value1 = arg1
     NNum value2 = arg2
+primArith _ _ = error "Wrong stack for an arithmetic binary operator is detected"
+#endif
 #endif
 
 #if __CLH_EXERCISE_2__ == 18
@@ -832,7 +839,7 @@ step state@(stack, dump, heap, globals, stats)
     dispatch (NCase eAddr alterAddrs) = caseStep state eAddr alterAddrs
 
 dataStep :: TiState -> Int -> [Addr] -> TiState
-dataStep (_ : [], stack : dump, heap, globals, stats) _ _
+dataStep ([_], stack : dump, heap, globals, stats) _ _
   = (stack, dump, heap, globals, stats)
 dataStep (stack, _ : dump, heap, globals, stats) _ _
   = error ("Wrong stack is detected : " ++ iDisplay (showStack heap stack))
@@ -864,13 +871,50 @@ primStep state Add = primArith state (+)
 primStep state Sub = primArith state (-)
 primStep state Mul = primArith state (*)
 primStep state Div = primArith state div
-primStep state (PrimConstr tag arith) = primConstr state tag arith
+primStep state (PrimConstr tag arity) = primConstr state tag arity
+
+primNeg (stack@(_ : _ : _), dump, heap, globals, stats)
+  = case arg of
+      NNum v -> (negApStack, dump, makeHeap v, globals, stats)
+      _
+        | isDataNode arg -> error "Negation cannot be applied to other than numbers"
+        | otherwise -> ([argAddr], negApStack : dump, heap, globals, stats)
+  where
+    _ : negApStack@(rootAddr : _) = stack
+
+    makeHeap = statHUpdate heap rootAddr . NNum . negate
+
+    argAddr : _ = getArgs heap stack
+    arg = statHLookup heap argAddr
+primNeg _ = error "Wrong stack for negate is detected"
+
+primArith (stack@(_ : _ : _ : _), dump, heap, globals, stats) f
+  = case (arg1, arg2) of
+      (NNum v1, NNum v2) -> (ap2Stack, dump, makeHeap v1 v2, globals, stats)
+      (_, NNum v2)
+        | isDataNode arg1 -> error "An arithmetic binary operator cannot be applied to other than numbers"
+        | otherwise -> ([arg1Addr], ap1Stack : dump, heap, globals, stats)
+      _
+        | isDataNode arg2 -> error "An arithmetic binary operator cannot be applied to other than numbers"
+        | otherwise -> ([arg2Addr], ap2Stack : dump, heap, globals, stats)
+  where
+    makeHeap v1 = statHUpdate heap rootAddr . NNum . f v1
+
+    _ : ap1Stack = stack
+    _ : ap2Stack = ap1Stack
+    rootAddr : _ = ap2Stack
+
+    arg1Addr : arg2Addr : _ = getArgs heap stack
+    arg1 = statHLookup heap arg1Addr
+    arg2 = statHLookup heap arg2Addr
+primArith _ _ = error "Wrong stack for an arithmetic binary operator Is detected"
 
 primConstr :: TiState -> Int -> Int -> TiState
-primConstr (stack, dump, heap, globals, stats) tag arith
-  = (stack'', dump, heap', globals, stats)
+primConstr (stack, dump, heap, globals, stats) tag arity
+  | length stack >= arity + 1 = (stack', dump, heap', globals, stats)
+  | otherwise = error "Wrong stack for data type construction is detected"
   where
-    stack''@(rootAddr : stack') = drop arith stack
+    stack'@(rootAddr : _) = drop arity stack
     heap' = statHUpdate heap rootAddr (NData tag args)
     args = getArgs heap stack
 #endif
@@ -906,6 +950,23 @@ showNode heap (NPrim name _)
   = iConcat [ iStr "NPrim ", iStr name ]
 showNode heap (NData tag args)
   = iConcat [ iStr "NData ", iNum tag, iStr ", ", iInterleave (iStr " ") (map showFWAddr args) ]
+
+#if __CLH_EXERCISE_2__ < 26
+primNeg (stack@(_ : _ : _), dump, heap, globals, stats)
+  = case arg of
+      NNum v -> (negApStack, dump, makeHeap v, globals, stats)
+      _
+        | isDataNode arg -> error "Negation cannot be applied to other than numbers"
+        | otherwise -> ([argAddr], negApStack : dump, heap, globals, stats)
+  where
+    _ : negApStack@(rootAddr : _) = stack
+
+    makeHeap = statHUpdate heap rootAddr . NNum . negate
+
+    argAddr : _ = getArgs heap stack
+    arg = statHLookup heap argAddr
+primNeg _ = error "Wrong stack for negate is detected"
+#endif
 
 #if __CLH_EXERCISE_2__ < 22
 data Primitive
@@ -961,7 +1022,7 @@ step state@(stack, dump, heap, globals, stats)
 
 dataStep :: TiState -> Int -> [Addr] -> TiState
 #if __CLH_EXERCISE_2__ < 26
-dataStep (_ : [], stack : dump, heap, globals, stats) _ _
+dataStep ([_], stack : dump, heap, globals, stats) _ _
   = (stack, dump, heap, globals, stats)
 dataStep (stack, _ : dump, heap, globals, stats) _ _
   = error ("Wrong stack is detected : " ++ iDisplay (showStack heap stack))
@@ -975,7 +1036,7 @@ primStep state Add = primArith state (+)
 primStep state Sub = primArith state (-)
 primStep state Mul = primArith state (*)
 primStep state Div = primArith state div
-primStep state (PrimConstr tag arith) = primConstr state tag arith
+primStep state (PrimConstr tag arity) = primConstr state tag arity
 primStep state If = primIf state
 primStep state Greater = primComp state (>)
 primStep state GreaterEq = primComp state (>=)
@@ -987,25 +1048,27 @@ primStep state NotEq = primComp state (/=)
 
 primConstr :: TiState -> Int -> Int -> TiState
 #if __CLH_EXERCISE_2__ < 26
-primConstr (stack, dump, heap, globals, stats) tag arith
-  = (stack'', dump, heap', globals, stats)
+primConstr (stack, dump, heap, globals, stats) tag arity
+  | length stack >= arity + 1 = (stack', dump, heap', globals, stats)
+  | otherwise = error "Wrong stack for data type construction is detected"
   where
-    stack''@(rootAddr : stack') = drop arith stack
+    stack'@(rootAddr : _) = drop arity stack
     heap' = statHUpdate heap rootAddr (NData tag args)
     args = getArgs heap stack
 #endif
 
 primIf :: TiState -> TiState
 #if __CLH_EXERCISE_2__ < 26
-primIf (stack, dump, heap, globals, stats)
-  | isDataNode cond = (rootStack, dump, heap', globals, stats)
-  | otherwise = ([condAddr], ifApStack : dump, heap, globals, stats)
+primIf (stack@(_ : _ : _ : _ : _), dump, heap, globals, stats)
+  = case cond of
+      NData 1 [] -> (rootStack, dump, falseHeap, globals, stats)
+      NData 2 [] -> (rootStack, dump, trueHeap, globals, stats)
+      _
+        | isDataNode cond -> error "Wrong data type for if is detected"
+        | otherwise -> ([condAddr], ifApStack : dump, heap, globals, stats)
   where
-    heap'
-      | length args /= 0 = error "Wrong type"
-      | tag == 2 = statHUpdate heap rootAddr (NInd trueAddr)
-      | tag == 1 = statHUpdate heap rootAddr (NInd falseAddr)
-      | otherwise = error "Wrong type"
+    trueHeap = statHUpdate heap rootAddr (NInd trueAddr)
+    falseHeap = statHUpdate heap rootAddr (NInd falseAddr)
 
     _ : ifApStack = stack
     _ : _ : rootStack = ifApStack
@@ -1013,13 +1076,13 @@ primIf (stack, dump, heap, globals, stats)
 
     condAddr : trueAddr : falseAddr : _ = getArgs heap stack
     cond = statHLookup heap condAddr
-    NData tag args = cond
+primIf _ = error "Wrong stack for if is detected"
 #endif
 
 primArith state f = primDyadic state nodeF
   where
     nodeF (NNum v1) (NNum v2) = NNum (f v1 v2)
-    nodeF _ _ = error "Wrong type"
+    nodeF _ _ = error "Wrong data type for a binary arithmetic operation is detected"
 
 primComp :: TiState -> (Int -> Int -> Bool) -> TiState
 primComp state f = primDyadic state nodeF
@@ -1027,11 +1090,11 @@ primComp state f = primDyadic state nodeF
     nodeF (NNum v1) (NNum v2)
       | f v1 v2 = NData 2 []
       | otherwise = NData 1 []
-    nodeF _ _ = error "Wrong type"
+    nodeF _ _ = error "Wrong data type for a binary comparison operation is detected"
 
 primDyadic :: TiState -> (Node -> Node -> Node) -> TiState
 #if __CLH_EXERCISE_2__ < 26
-primDyadic (stack, dump, heap, globals, stats) f
+primDyadic (stack@(_ : _ : _ : _), dump, heap, globals, stats) f
   | arg1IsDataNode && arg2IsDataNode = (ap2Stack, dump, heap', globals, stats)
   | arg2IsDataNode = ([arg1Addr], ap1Stack : dump, heap, globals, stats)
   | otherwise = ([arg2Addr], ap2Stack : dump, heap, globals, stats)
@@ -1047,6 +1110,7 @@ primDyadic (stack, dump, heap, globals, stats) f
     arg2 = statHLookup heap arg2Addr
     arg1IsDataNode = isDataNode arg1
     arg2IsDataNode = isDataNode arg2
+primDyadic _ _ = error "Wrong stack for a binary operation is detected"
 #endif
 
 #if __CLH_EXERCISE_2__ >= 22
@@ -1083,7 +1147,7 @@ primStep state Add = primArith state (+)
 primStep state Sub = primArith state (-)
 primStep state Mul = primArith state (*)
 primStep state Div = primArith state div
-primStep state (PrimConstr tag arith) = primConstr state tag arith
+primStep state (PrimConstr tag arity) = primConstr state tag arity
 primStep state If = primIf state
 primStep state Greater = primComp state (>)
 primStep state GreaterEq = primComp state (>=)
@@ -1096,15 +1160,16 @@ primStep state CasePair = primCasePair state
 
 primCasePair :: TiState -> TiState
 #if __CLH_EXERCISE_2__ < 26
-primCasePair (stack, dump, heap, globals, stats)
-  | isDataNode expr = (rootStack, dump, heap'', globals, stats)
-  | otherwise = ([exprAddr], caseApStack : dump, heap, globals, stats)
+primCasePair (stack@(_ : _ : _ : _), dump, heap, globals, stats)
+  = case expr of
+      NData 1 [arg1, arg2] -> (rootStack, dump, makeHeap arg1 arg2, globals, stats)
+      _
+        | isDataNode expr -> error "Wrong data type for casePair is detected"
+        | otherwise -> ([exprAddr], caseApStack : dump, heap, globals, stats)
   where
-    heap''
-      | length args /= 2 || tag /= 1 = error "Wrong type"
-      | otherwise = statHUpdate heap' rootAddr (NAp funAddr' (args !! 1))
-
-    (heap', funAddr') = statHAlloc heap (NAp funAddr (args !! 0))
+    makeHeap arg1 arg2 = statHUpdate heap' rootAddr (NAp funAddr' arg2)
+      where
+        (heap', funAddr') = statHAlloc heap (NAp funAddr arg1)
 
     _ : caseApStack = stack
     _ : rootStack = caseApStack
@@ -1112,7 +1177,7 @@ primCasePair (stack, dump, heap, globals, stats)
 
     exprAddr : funAddr : _ = getArgs heap stack
     expr = statHLookup heap exprAddr
-    NData tag args = expr
+primCasePair _ = error "Wrong stack for casePair is detected"
 #endif
 
 #if __CLH_EXERCISE_2__ < 24
@@ -1167,7 +1232,7 @@ primStep state Add = primArith state (+)
 primStep state Sub = primArith state (-)
 primStep state Mul = primArith state (*)
 primStep state Div = primArith state div
-primStep state (PrimConstr tag arith) = primConstr state tag arith
+primStep state (PrimConstr tag arity) = primConstr state tag arity
 primStep state If = primIf state
 primStep state Greater = primComp state (>)
 primStep state GreaterEq = primComp state (>=)
@@ -1182,16 +1247,18 @@ primStep state Abort = error "Program is aborted by abort primitive"
 
 primCaseList :: TiState -> TiState
 #if __CLH_EXERCISE_2__ < 26
-primCaseList (stack, dump, heap, globals, stats)
-  | isDataNode expr = (rootStack, dump, heap'', globals, stats)
-  | otherwise = ([exprAddr], caseApStack : dump, heap, globals, stats)
+primCaseList (stack@(_ : _ : _ : _ : _), dump, heap, globals, stats)
+  = case expr of
+      NData 1 [] -> (rootStack, dump, nilHeap, globals, stats)
+      NData 2 [h, t] -> (rootStack, dump, makeConsHeap h t, globals, stats)
+      _
+        | isDataNode expr -> error "Wrong data type for caseList is detected"
+        | otherwise -> ([exprAddr], caseApStack : dump, heap, globals, stats)
   where
-    heap''
-      | tag == 1 && argsLength == 0 = statHUpdate heap rootAddr (NInd nilAddr)
-      | tag == 2 && argsLength == 2 = statHUpdate heap' rootAddr (NAp consAddr' (args !! 1))
-      | otherwise = error "Wrong type"
-
-    (heap', consAddr') = statHAlloc heap (NAp consAddr (args !! 0))
+    nilHeap = statHUpdate heap rootAddr (NInd nilAddr)
+    makeConsHeap h t = statHUpdate heap' rootAddr (NAp consAddr' t)
+      where
+        (heap', consAddr') = statHAlloc heap (NAp consAddr h)
 
     _ : caseApStack = stack
     _ : _ : rootStack = caseApStack
@@ -1199,8 +1266,7 @@ primCaseList (stack, dump, heap, globals, stats)
 
     exprAddr : nilAddr : consAddr : _ = getArgs heap stack
     expr = statHLookup heap exprAddr
-    NData tag args = expr
-    argsLength = length args
+primCaseList _ = error "Wrong stack for caseList is detected"
 #endif
 
 #if __CLH_EXERCISE_2__ < 26
@@ -1240,8 +1306,8 @@ doAdmin state@(_, stack, _, _, _, stats)
   = applyToStats (updateMaxStackDepth . tiStatIncSteps) state
   where
     updateMaxStackDepth
-      | stackDepth > statMaxStackDepth = tiStatSetMaxStackDepth stackDepth
-      | otherwise = id
+      | stackDepth <= statMaxStackDepth = id
+      | otherwise = tiStatSetMaxStackDepth stackDepth
 
     stackDepth = length stack
     statMaxStackDepth = tiStatGetMaxStackDepth stats
@@ -1266,52 +1332,48 @@ showStats (_, _, _, heap, _, stats)
 
 indStep (output, _ : stack, dump, heap, globals, stats) addr
   = (output, addr : stack, dump, heap, globals, stats)
+indStep _ _ = error "Wrong stack!"
 
 scStep (output, stack, dump, heap, globals, stats) scName argNames body
-  | argsLength + 1 <= length stack = (output, stack'', dump, heap', globals, stats)
+  | argsLength + 1 <= length stack = (output, stack', dump, heap', globals, stats)
+  | otherwise = error ("Two few arguments are provided to the function " ++ scName)
   where
-    rootAddr : stack' = drop argsLength stack
-    stack'' = rootAddr : stack'
+    stack'@(rootAddr : _) = drop argsLength stack
     heap' = instantiateAndUpdate body rootAddr heap env
     env = argBindings ++ globals
     argBindings = zip argNames (getArgs heap stack)
     argsLength = length argNames
-scStep _ scName _ _
-  = error ("Two few arguments are provided to the function " ++ scName)
 
-primNeg :: TiState -> TiState
-primNeg (output, stack, dump, heap, globals, stats)
-  | isDataNode arg = (output, apStack, dump, heap', globals, stats)
-  | otherwise = (output, [argAddr], apStack : dump, heap, globals, stats)
+primNeg (output, stack@(_ : _ : _), dump, heap, globals, stats)
+  = case arg of
+      NNum v -> (output, negApStack, dump, makeHeap v, globals, stats)
+      _
+        | isDataNode arg -> error "Negation cannot be applied to other than numbers"
+        | otherwise -> (output, [argAddr], negApStack : dump, heap, globals, stats)
   where
-    heap' = statHUpdate heap rootAddr (NNum (negate value))
+    _ : negApStack@(rootAddr : _) = stack
 
-    _ : apStack = stack
-    rootAddr : _ = apStack
+    makeHeap = statHUpdate heap rootAddr . NNum . negate
 
     argAddr : _ = getArgs heap stack
     arg = statHLookup heap argAddr
-    NNum value = arg
+primNeg _ = error "Wrong stack for negate is detected"
 
-numStep (output, _ : [], stack : dump, heap, globals, stats) _
+numStep (output, [_], stack : dump, heap, globals, stats) _
   = (output, stack, dump, heap, globals, stats)
 numStep (_, stack, _ : _, heap, _, _) _
   = error ("Wrong stack is detected : " ++ iDisplay (showStack heap stack))
 numStep (_, _, dump, heap, _, _) _
   = error ("Wrong dump is detected : " ++ iDisplay (iInterleave iNewline (map (showStack heap) dump)))
 
-apStep (output, stack, dump, heap, globals, stats) a1 a2
-  | isInd = (output, stack, dump, heap', globals, stats)
-  | otherwise = (output, a1 : stack, dump, heap, globals, stats)
+apStep (output, stack@(topAddr : _), dump, heap, globals, stats) a1 a2
+  = case arg of
+      NInd a3 -> (output, stack, dump, makeHeap a3, globals, stats)
+      _ -> (output, a1 : stack, dump, heap, globals, stats)
   where
-    topAddr : _ = stack
-    heap' = case arg of
-      NInd a3 -> statHUpdate heap topAddr (NAp a1 a3)
-      _ -> heap
-    isInd = case arg of
-      NInd _ -> True
-      _ -> False
+    makeHeap = statHUpdate heap topAddr . NAp a1
     arg = statHLookup heap a2
+apStep _ _ _ = error "Empty stack for application is dectected"
 
 step state@(_, stack, _, heap, _, _)
   = dispatch (statHLookup heap (head stack))
@@ -1325,29 +1387,31 @@ step state@(_, stack, _, heap, _, _)
       = tiStatIncPReds `applyToStats` primStep state prim
     dispatch (NData tag args) = dataStep state tag args
 
-dataStep (output, _ : [], stack : dump, heap, globals, stats) _ _
+dataStep (output, [_], stack : dump, heap, globals, stats) _ _
   = (output, stack, dump, heap, globals, stats)
 dataStep (_, stack, _ : _, heap, _, _) _ _
   = error ("Wrong stack is detected : " ++ iDisplay (showStack heap stack))
 dataStep (_, _, dump, heap, _, _) _ _
   = error ("Wrong dump is detected : " ++ iDisplay (iInterleave iNewline (map (showStack heap) dump)))
 
-primConstr (output, stack, dump, heap, globals, stats) tag arith
-  = (output, stack'', dump, heap', globals, stats)
+primConstr (output, stack, dump, heap, globals, stats) tag arity
+  | length stack >= arity + 1 = (output, stack', dump, heap', globals, stats)
+  | otherwise = error "Wrong stack for data type construction is detected"
   where
-    stack''@(rootAddr : stack') = drop arith stack
+    stack'@(rootAddr : _) = drop arity stack
     heap' = statHUpdate heap rootAddr (NData tag args)
     args = getArgs heap stack
 
-primIf (output, stack, dump, heap, globals, stats)
-  | isDataNode cond = (output, rootStack, dump, heap', globals, stats)
-  | otherwise = (output, [condAddr], ifApStack : dump, heap, globals, stats)
+primIf (output, stack@(_ : _ : _ : _ : _), dump, heap, globals, stats)
+  = case cond of
+      NData 1 [] -> (output, rootStack, dump, falseHeap, globals, stats)
+      NData 2 [] -> (output, rootStack, dump, trueHeap, globals, stats)
+      _
+        | isDataNode cond -> error "Wrong data type for if is detected"
+        | otherwise -> (output, [condAddr], ifApStack : dump, heap, globals, stats)
   where
-    heap'
-      | length args /= 0 = error "Wrong type"
-      | tag == 2 = statHUpdate heap rootAddr (NInd trueAddr)
-      | tag == 1 = statHUpdate heap rootAddr (NInd falseAddr)
-      | otherwise = error "Wrong type"
+    trueHeap = statHUpdate heap rootAddr (NInd trueAddr)
+    falseHeap = statHUpdate heap rootAddr (NInd falseAddr)
 
     _ : ifApStack = stack
     _ : _ : rootStack = ifApStack
@@ -1355,9 +1419,9 @@ primIf (output, stack, dump, heap, globals, stats)
 
     condAddr : trueAddr : falseAddr : _ = getArgs heap stack
     cond = statHLookup heap condAddr
-    NData tag args = cond
+primIf _ = error "Wrong stack for if is detected"
 
-primDyadic (output, stack, dump, heap, globals, stats) f
+primDyadic (output, stack@(_ : _ : _ : _), dump, heap, globals, stats) f
   | arg1IsDataNode && arg2IsDataNode = (output, ap2Stack, dump, heap', globals, stats)
   | arg2IsDataNode = (output, [arg1Addr], ap1Stack : dump, heap, globals, stats)
   | otherwise = (output, [arg2Addr], ap2Stack : dump, heap, globals, stats)
@@ -1373,16 +1437,18 @@ primDyadic (output, stack, dump, heap, globals, stats) f
     arg2 = statHLookup heap arg2Addr
     arg1IsDataNode = isDataNode arg1
     arg2IsDataNode = isDataNode arg2
+primDyadic _ _ = error "Wrong stack for a binary operation is detected"
 
-primCasePair (output, stack, dump, heap, globals, stats)
-  | isDataNode expr = (output, rootStack, dump, heap'', globals, stats)
-  | otherwise = (output, [exprAddr], caseApStack : dump, heap, globals, stats)
+primCasePair (output, stack@(_ : _ : _ : _), dump, heap, globals, stats)
+  = case expr of
+      NData 1 [arg1, arg2] -> (output, rootStack, dump, makeHeap arg1 arg2, globals, stats)
+      _
+        | isDataNode expr -> error "Wrong data type for casePair is detected"
+        | otherwise -> (output, [exprAddr], caseApStack : dump, heap, globals, stats)
   where
-    heap''
-      | length args /= 2 || tag /= 1 = error "Wrong type"
-      | otherwise = statHUpdate heap' rootAddr (NAp funAddr' (args !! 1))
-
-    (heap', funAddr') = statHAlloc heap (NAp funAddr (args !! 0))
+    makeHeap arg1 arg2 = statHUpdate heap' rootAddr (NAp funAddr' arg2)
+      where
+        (heap', funAddr') = statHAlloc heap (NAp funAddr arg1)
 
     _ : caseApStack = stack
     _ : rootStack = caseApStack
@@ -1390,18 +1456,20 @@ primCasePair (output, stack, dump, heap, globals, stats)
 
     exprAddr : funAddr : _ = getArgs heap stack
     expr = statHLookup heap exprAddr
-    NData tag args = expr
+primCasePair _ = error "Wrong stack for casePair is detected"
 
-primCaseList (output, stack, dump, heap, globals, stats)
-  | isDataNode expr = (output, rootStack, dump, heap'', globals, stats)
-  | otherwise = (output, [exprAddr], caseApStack : dump, heap, globals, stats)
+primCaseList (output, stack@(_ : _ : _ : _ : _), dump, heap, globals, stats)
+  = case expr of
+      NData 1 [] -> (output, rootStack, dump, nilHeap, globals, stats)
+      NData 2 [h, t] -> (output, rootStack, dump, makeConsHeap h t, globals, stats)
+      _
+        | isDataNode expr -> error "Wrong data type for caseList is detected"
+        | otherwise -> (output, [exprAddr], caseApStack : dump, heap, globals, stats)
   where
-    heap''
-      | tag == 1 && argsLength == 0 = statHUpdate heap rootAddr (NInd nilAddr)
-      | tag == 2 && argsLength == 2 = statHUpdate heap' rootAddr (NAp consAddr' (args !! 1))
-      | otherwise = error "Wrong type"
-
-    (heap', consAddr') = statHAlloc heap (NAp consAddr (args !! 0))
+    nilHeap = statHUpdate heap rootAddr (NInd nilAddr)
+    makeConsHeap h t = statHUpdate heap' rootAddr (NAp consAddr' t)
+      where
+        (heap', consAddr') = statHAlloc heap (NAp consAddr h)
 
     _ : caseApStack = stack
     _ : _ : rootStack = caseApStack
@@ -1409,8 +1477,7 @@ primCaseList (output, stack, dump, heap, globals, stats)
 
     exprAddr : nilAddr : consAddr : _ = getArgs heap stack
     expr = statHLookup heap exprAddr
-    NData tag args = expr
-    argsLength = length args
+primCaseList _ = error "Wrong stack for caseList is detected"
 
 data Primitive
   = Neg
@@ -1441,7 +1508,7 @@ primStep state Add = primArith state (+)
 primStep state Sub = primArith state (-)
 primStep state Mul = primArith state (*)
 primStep state Div = primArith state div
-primStep state (PrimConstr tag arith) = primConstr state tag arith
+primStep state (PrimConstr tag arity) = primConstr state tag arity
 primStep state If = primIf state
 primStep state Greater = primComp state (>)
 primStep state GreaterEq = primComp state (>=)
@@ -1458,20 +1525,22 @@ primStep state Print = primPrint state
 primStop :: TiState -> TiState
 primStop (output, [_], [], heap, globals, stats)
   = (output, [], [], heap, globals, stats)
-primStop (_, _, [], _, _, _) = error "Wrong stack for stop"
-primStop _ = error "Wrong dump for stop"
+primStop (_, _, [], _, _, _) = error "Wrong stack for stop is dectected"
+primStop _ = error "Wrong dump for stop is dectected"
 
 primPrint :: TiState -> TiState
 primPrint (output, stack@[_, _, _], [], heap, globals, stats)
-  | isDataNode arg1 = (v1 : output, [arg2Addr], [], heap, globals, stats)
-  | otherwise = (output, [arg1Addr], [arg1Stack], heap, globals, stats)
+  = case arg1 of
+      NNum v -> (v : output, [arg2Addr], [], heap, globals, stats)
+      _
+        | isDataNode arg1 -> error "Wrong data type for print is detected"
+        | otherwise -> (output, [arg1Addr], [arg1Stack], heap, globals, stats)
   where
     _ : _ : arg1Stack = stack
     arg1Addr : arg2Addr : _ = getArgs heap stack
     arg1 = statHLookup heap arg1Addr
-    NNum v1 = arg1
-primPrint (_, _, [], _, _, _) = error "Wrong stack for print"
-primPrint _ = error "Wrong dump for print"
+primPrint (_, _, [], _, _, _) = error "Wrong stack for print is dectected"
+primPrint _ = error "Wrong dump for print is dectected"
 
 primitives
   = [ ("negate", Neg)
