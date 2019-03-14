@@ -1,0 +1,5 @@
+Nil = Pack{1,0}
+Cons = Pack{2,2}
+
+head l = caseList l abort K
+tail l = caseList l abort K1
