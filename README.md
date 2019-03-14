@@ -73,6 +73,7 @@ This repository is about an implementation of a simple functional language based
 | Exercise 2.23 | /exercises/exercise2-23.core                             |
 | Exercise 2.24 | /src/Language/TiMachine.hs, /exercises/exercise2-24.md   |
 | Exercise 2.25 | /exercises/exercise2-25.md                               |
+| Exercise 2.26 | /src/Language/TiMachine.hs                               |
 
 </p>
 </details>
