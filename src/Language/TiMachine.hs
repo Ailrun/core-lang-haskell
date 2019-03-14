@@ -916,7 +916,7 @@ primConstr (stack, dump, heap, globals, stats) tag arity
   where
     stack'@(rootAddr : _) = drop arity stack
     heap' = statHUpdate heap rootAddr (NData tag args)
-    args = getArgs heap stack
+    args = take arity $ getArgs heap stack
 #endif
 
 #if __CLH_EXERCISE_2__ >= 20
@@ -1054,7 +1054,7 @@ primConstr (stack, dump, heap, globals, stats) tag arity
   where
     stack'@(rootAddr : _) = drop arity stack
     heap' = statHUpdate heap rootAddr (NData tag args)
-    args = getArgs heap stack
+    args = take arity $ getArgs heap stack
 #endif
 
 primIf :: TiState -> TiState
@@ -1400,7 +1400,7 @@ primConstr (output, stack, dump, heap, globals, stats) tag arity
   where
     stack'@(rootAddr : _) = drop arity stack
     heap' = statHUpdate heap rootAddr (NData tag args)
-    args = getArgs heap stack
+    args = take arity $ getArgs heap stack
 
 primIf (output, stack@(_ : _ : _ : _ : _), dump, heap, globals, stats)
   = case cond of
