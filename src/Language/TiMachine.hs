@@ -1008,6 +1008,7 @@ primDyadic (stack, dump, heap, globals, stats) f
     arg2IsDataNode = isDataNode arg2
 
 #if __CLH_EXERCISE_2__ >= 22
+#if __CLH_EXERCISE_2__ < 24
 data Primitive
   = Neg
   | Add
@@ -1049,6 +1050,7 @@ primStep state LessEq = primComp state (<=)
 primStep state Eq = primComp state (==)
 primStep state NotEq = primComp state (/=)
 primStep state CasePair = primCasePair state
+#endif
 
 primCasePair :: TiState -> TiState
 primCasePair (stack, dump, heap, globals, stats)
@@ -1068,6 +1070,77 @@ primCasePair (stack, dump, heap, globals, stats)
     exprAddr : funAddr : _ = getArgs heap stack
     expr = statHLookup heap exprAddr
     NData tag args = expr
+
+#if __CLH_EXERCISE_2__ >= 24
+data Primitive
+  = Neg
+  | Add
+  | Sub
+  | Mul
+  | Div
+  | PrimConstr Int Int
+  | If
+  | Greater
+  | GreaterEq
+  | Less
+  | LessEq
+  | Eq
+  | NotEq
+  | CasePair
+  | CaseList
+  | Abort
+
+primitives
+  = [ ("negate", Neg)
+    , ("+", Add), ("-", Sub)
+    , ("*", Mul), ("/", Div)
+    , ("if", If)
+    , (">", Greater), (">=", GreaterEq)
+    , ("<", Less), ("<=", LessEq)
+    , ("==", Eq), ("~=", NotEq)
+    , ("casePair", CasePair)
+    , ("caseList", CaseList)
+    , ("abort", Abort)
+    ]
+
+primStep state Neg = primNeg state
+primStep state Add = primArith state (+)
+primStep state Sub = primArith state (-)
+primStep state Mul = primArith state (*)
+primStep state Div = primArith state div
+primStep state (PrimConstr tag arith) = primConstr state tag arith
+primStep state If = primIf state
+primStep state Greater = primComp state (>)
+primStep state GreaterEq = primComp state (>=)
+primStep state Less = primComp state (<)
+primStep state LessEq = primComp state (<=)
+primStep state Eq = primComp state (==)
+primStep state NotEq = primComp state (/=)
+primStep state CasePair = primCasePair state
+primStep state CaseList = primCaseList state
+primStep state Abort = error "Program is aborted by abort primitive"
+
+primCaseList :: TiState -> TiState
+primCaseList (stack, dump, heap, globals, stats)
+  | isDataNode expr = (rootStack, dump, heap'', globals, stats)
+  | otherwise = ([exprAddr], caseApStack : dump, heap, globals, stats)
+  where
+    heap''
+      | tag == 1 && argsLength == 0 = statHUpdate heap rootAddr (NInd nilAddr)
+      | tag == 2 && argsLength == 2 = statHUpdate heap' rootAddr (NAp consAddr' (args !! 1))
+      | otherwise = error "Wrong type"
+
+    (heap', consAddr') = statHAlloc heap (NAp consAddr (args !! 0))
+
+    _ : caseApStack = stack
+    _ : _ : rootStack = caseApStack
+    rootAddr : _ = rootStack
+
+    exprAddr : nilAddr : consAddr : _ = getArgs heap stack
+    expr = statHLookup heap exprAddr
+    NData tag args = expr
+    argsLength = length args
+#endif
 #endif
 #endif
 #endif
