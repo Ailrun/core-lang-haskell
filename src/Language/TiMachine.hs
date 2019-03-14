@@ -68,7 +68,9 @@ compile program
     addressOfMain = aLookup globals "main" (error "main is not defined")
 
 extraPreludeDefs :: CoreProgram
+#if __CLH_EXERCISE_2__ < 20
 extraPreludeDefs = []
+#endif
 
 buildInitialHeap :: [CoreScDefn] -> (TiHeap, TiGlobals)
 #if __CLH_EXERCISE_2__ < 7
@@ -855,6 +857,18 @@ primConstr (stack, dump, heap, globals, stats) tag arith
     args = getArgs heap stack
 #endif
 
+#if __CLH_EXERCISE_2__ >= 20
+#if __CLH_EXERCISE_2__ < 22
+extraPreludeDefs
+  = [ ("False", [], EConstr 1 0)
+    , ("True", [], EConstr 2 0)
+    , ("and", ["x", "y"], EAp (EAp (EAp (EVar "if") (EVar "x")) (EVar "y")) (EVar "False"))
+    , ("or", ["x", "y"], EAp (EAp (EAp (EVar "if") (EVar "x")) (EVar "True")) (EVar "y"))
+    , ("xor", ["x", "y"], EAp (EAp (EAp (EVar "if") (EVar "x")) (EAp (EVar "not") (EVar "y"))) (EVar "y"))
+    , ("not", ["y"], EAp (EAp (EAp (EVar "if") (EVar "y")) (EVar "False")) (EVar "True"))
+    ]
+#endif
+
 #if __CLH_EXERCISE_2__ >= 21
 data Node
   = NAp Addr Addr
@@ -1071,6 +1085,20 @@ primCasePair (stack, dump, heap, globals, stats)
     expr = statHLookup heap exprAddr
     NData tag args = expr
 
+#if __CLH_EXERCISE_2__ < 24
+extraPreludeDefs
+  = [ ("False", [], EConstr 1 0)
+    , ("True", [], EConstr 2 0)
+    , ("and", ["x", "y"], EAp (EAp (EAp (EVar "if") (EVar "x")) (EVar "y")) (EVar "False"))
+    , ("or", ["x", "y"], EAp (EAp (EAp (EVar "if") (EVar "x")) (EVar "True")) (EVar "y"))
+    , ("xor", ["x", "y"], EAp (EAp (EAp (EVar "if") (EVar "x")) (EAp (EVar "not") (EVar "y"))) (EVar "y"))
+    , ("not", ["y"], EAp (EAp (EAp (EVar "if") (EVar "y")) (EVar "False")) (EVar "True"))
+    , ("MkPair", [], EConstr 1 2)
+    , ("fst", ["p"], EAp (EAp (EVar "casePair") (EVar "p")) (EVar "K"))
+    , ("snd", ["p"], EAp (EAp (EVar "casePair") (EVar "p")) (EVar "K1"))
+    ]
+#endif
+
 #if __CLH_EXERCISE_2__ >= 24
 data Primitive
   = Neg
@@ -1140,6 +1168,23 @@ primCaseList (stack, dump, heap, globals, stats)
     expr = statHLookup heap exprAddr
     NData tag args = expr
     argsLength = length args
+
+extraPreludeDefs
+  = [ ("False", [], EConstr 1 0)
+    , ("True", [], EConstr 2 0)
+    , ("and", ["x", "y"], EAp (EAp (EAp (EVar "if") (EVar "x")) (EVar "y")) (EVar "False"))
+    , ("or", ["x", "y"], EAp (EAp (EAp (EVar "if") (EVar "x")) (EVar "True")) (EVar "y"))
+    , ("xor", ["x", "y"], EAp (EAp (EAp (EVar "if") (EVar "x")) (EAp (EVar "not") (EVar "y"))) (EVar "y"))
+    , ("not", ["y"], EAp (EAp (EAp (EVar "if") (EVar "y")) (EVar "False")) (EVar "True"))
+    , ("MkPair", [], EConstr 1 2)
+    , ("fst", ["p"], EAp (EAp (EVar "casePair") (EVar "p")) (EVar "K"))
+    , ("snd", ["p"], EAp (EAp (EVar "casePair") (EVar "p")) (EVar "K1"))
+    , ("Cons", [], EConstr 2 2)
+    , ("Nil", [], EConstr 1 0)
+    , ("head", ["l"], EAp (EAp (EAp (EVar "caseList") (EVar "l")) (EVar "abort")) (EVar "K"))
+    , ("tail", ["l"], EAp (EAp (EAp (EVar "caseList") (EVar "l")) (EVar "abort")) (EVar "K1"))
+    ]
+#endif
 #endif
 #endif
 #endif
