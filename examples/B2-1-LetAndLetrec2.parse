@@ -1,0 +1,1 @@
+[("oct",["g","x"],ELet False [("h",EAp (EVar "twice") (EVar "g"))] (ELet False [("k",EAp (EVar "twice") (EVar "h"))] (EAp (EVar "k") (EAp (EVar "k") (EVar "x"))))),("main",[],EAp (EAp (EVar "oct") (EVar "I")) (ENum 4))]

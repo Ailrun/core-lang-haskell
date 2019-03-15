@@ -1,0 +1,1 @@
+[("downfrom",["n"],EAp (EAp (EAp (EVar "if") (EAp (EAp (EVar "==") (EVar "n")) (ENum 0))) (EVar "Nil")) (EAp (EAp (EVar "Cons") (EVar "n")) (EAp (EVar "downfrom") (EAp (EAp (EVar "-") (EVar "n")) (ENum 1))))),("main",[],EAp (EVar "downfrom") (ENum 4))]

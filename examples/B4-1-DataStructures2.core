@@ -1,0 +1,22 @@
+main = take 3 (sieve (from 2)) ;
+
+from n = Cons n (from (n+1)) ;
+
+sieve xs = case xs of
+                <1> -> Nil ;
+                <2> p ps -> Cons p (sieve (filter (nonMultiple p) ps)) ;
+
+filter predicate xs
+        = case xs of
+                <1> -> Nil ;
+                <2> p ps -> let rest = filter predicate ps
+                            in
+                            if (predicate p) (Cons p rest) rest ;
+
+nonMultiple p n = ((n/p)*p) ~= n ;
+
+take n xs = if (n==0)
+                Nil
+                (case xs of
+                        <1> -> Nil ;
+                        <2> p ps -> Cons p (take (n-1) ps))

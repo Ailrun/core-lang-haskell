@@ -1,0 +1,1 @@
+[("main",[],ELet False [("id1",EAp (EAp (EVar "I") (EVar "I")) (EVar "I"))] (EAp (EAp (EVar "id1") (EVar "id1")) (ENum 3)))]

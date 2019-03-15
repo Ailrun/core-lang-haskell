@@ -1,0 +1,2 @@
+nfib n = if (n==0) 1 (1 + nfib (n-1) + nfib (n-2)) ;
+main = nfib 4

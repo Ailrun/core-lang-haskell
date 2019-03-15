@@ -1,0 +1,1 @@
+[("infinite",["x"],ELet True [("xs",EAp (EAp (EVar "cons") (EVar "x")) (EVar "xs"))] (EVar "xs")),("main",[],EAp (EVar "hd") (EAp (EVar "tl") (EAp (EVar "tl") (EAp (EVar "infinite") (ENum 4)))))]

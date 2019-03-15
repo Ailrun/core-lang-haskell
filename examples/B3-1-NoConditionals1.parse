@@ -1,0 +1,1 @@
+[("main",[],EAp (EAp (EVar "+") (EAp (EAp (EVar "*") (ENum 4)) (ENum 5))) (EAp (EAp (EVar "-") (ENum 2)) (ENum 5)))]

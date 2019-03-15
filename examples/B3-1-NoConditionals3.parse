@@ -1,0 +1,1 @@
+[("length",["xs"],EAp (EAp (EVar "xs") (EVar "length1")) (ENum 0)),("length1",["x","xs"],EAp (EAp (EVar "+") (ENum 1)) (EAp (EVar "length") (EVar "xs"))),("main",[],EAp (EVar "length") (EAp (EAp (EVar "cons") (ENum 3)) (EAp (EAp (EVar "cons") (ENum 3)) (EAp (EAp (EVar "cons") (ENum 3)) (EVar "nil")))))]

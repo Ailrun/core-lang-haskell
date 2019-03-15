@@ -1,0 +1,1 @@
+[("gcd",["a","b"],EAp (EAp (EAp (EVar "if") (EAp (EAp (EVar "==") (EVar "a")) (EVar "b"))) (EVar "a")) (EAp (EAp (EAp (EVar "if") (EAp (EAp (EVar "<") (EVar "a")) (EVar "b"))) (EAp (EAp (EVar "gcd") (EVar "b")) (EVar "a"))) (EAp (EAp (EVar "gcd") (EVar "b")) (EAp (EAp (EVar "-") (EVar "a")) (EVar "b"))))),("main",[],EAp (EAp (EVar "gcd") (ENum 6)) (ENum 10))]

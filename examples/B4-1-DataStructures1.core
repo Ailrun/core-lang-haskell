@@ -1,0 +1,4 @@
+downfrom n = if (n == 0)
+                  Nil
+                  (Cons n (downfrom (n-1))) ;
+main = downfrom 4

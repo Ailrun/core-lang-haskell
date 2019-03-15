@@ -1,0 +1,1 @@
+[("fac",["n"],EAp (EAp (EAp (EVar "if") (EAp (EAp (EVar "==") (EVar "n")) (ENum 0))) (ENum 1)) (EAp (EAp (EVar "*") (EVar "n")) (EAp (EVar "fac") (EAp (EAp (EVar "-") (EVar "n")) (ENum 1))))),("main",[],EAp (EVar "fac") (ENum 5))]

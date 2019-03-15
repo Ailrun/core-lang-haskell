@@ -1,0 +1,1 @@
+[("nfib",["n"],EAp (EAp (EAp (EVar "if") (EAp (EAp (EVar "==") (EVar "n")) (ENum 0))) (ENum 1)) (EAp (EAp (EVar "+") (ENum 1)) (EAp (EAp (EVar "+") (EAp (EVar "nfib") (EAp (EAp (EVar "-") (EVar "n")) (ENum 1)))) (EAp (EVar "nfib") (EAp (EAp (EVar "-") (EVar "n")) (ENum 2)))))),("main",[],EAp (EVar "nfib") (ENum 4))]
