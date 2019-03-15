@@ -1,0 +1,1 @@
+[("main",[],EAp (EAp (EVar "twice") (EAp (EAp (EVar "I") (EVar "I")) (EVar "I"))) (ENum 3))]

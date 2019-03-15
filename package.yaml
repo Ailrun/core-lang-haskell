@@ -16,7 +16,7 @@ license-file:        LICENSE
 extra-source-files:
   - README.md
 #extra-doc-files:
-#data-files:
+data-files: "examples/**/*"
 #data-dir:
 github: Ailrun/core-lang-haskell
 #custom-setup:
@@ -64,9 +64,14 @@ tests:
       - test
     ghc-options:     -threaded -rtsopts -with-rtsopts=-N
     dependencies:
+      # Test target
       - core-lang-haskell
+      # Test tools
       - hspec
       - QuickCheck
+      # Other utils
+      - directory
+      - filepath
     ## Test fields
     main:            Spec.hs
     #other-modules:
