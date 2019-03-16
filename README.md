@@ -46,36 +46,37 @@ This repository is about an implementation of a simple functional language based
 <summary>Exercises in Chapter 2</summary>
 <p>
 
-| Name          | Files                                                    |
-|---------------|----------------------------------------------------------|
-| Exercise 2.1  | /exercises/exercise2-01.md                               |
-| Exercise 2.2  | /exercises/exercise2-02.md                               |
-| Exercise 2.3  | _skipped_                                                |
-| Exercise 2.4  | /src/Language/TiMachine.hs                               |
-| Exercise 2.5  | /src/Language/TiMachine.hs                               |
-| Exercise 2.6  | /src/Language/TiMachine.hs                               |
-| Exercise 2.7  | /src/Language/TiMachine.hs                               |
-| Exercise 2.8  | /exercises/exercise2-08.md                               |
-| Exercise 2.9  | /exercises/exercise2-09.md                               |
-| Exercise 2.10 | /src/Language/TiMachine.hs                               |
-| Exercise 2.11 | /src/Language/TiMachine.hs                               |
-| Exercise 2.12 | /exercises/exercise2-12.md                               |
-| Exercise 2.13 | /src/Language/TiMachine.hs, /exercises/exercise2-13.md   |
-| Exercise 2.14 | /src/Language/TiMachine.hs                               |
-| Exercise 2.15 | /exercises/exercise2-15.md                               |
-| Exercise 2.16 | /src/Language/TiMachine.hs                               |
-| Exercise 2.17 | /src/Language/TiMachine.hs                               |
-| Exercise 2.18 | /src/Language/TiMachine.hs, /exercises/exercise2-18.md   |
-| Exercise 2.19 | /exercises/exercise2-19.md                               |
-| Exercise 2.20 | /src/Language/TiMachine.hs, /exercises/exercise2-20.core |
-| Exercise 2.21 | /src/Language/TiMachine.hs                               |
-| Exercise 2.22 | /src/Language/TiMachine.hs, /exercises/exercise2-22.md   |
-| Exercise 2.23 | /exercises/exercise2-23.core                             |
-| Exercise 2.24 | /src/Language/TiMachine.hs, /exercises/exercise2-24.md   |
-| Exercise 2.25 | /exercises/exercise2-25.md                               |
-| Exercise 2.26 | /src/Language/TiMachine.hs                               |
-| Exercise 2.27 | /src/Language/TiMachineAlter.hs                          |
-| Exercise 2.28 | /src/Language/TiMachineAlter.hs                          |
+| Name          | Files                                                       |
+|---------------|-------------------------------------------------------------|
+| Exercise 2.1  | /exercises/exercise2-01.md                                  |
+| Exercise 2.2  | /exercises/exercise2-02.md                                  |
+| Exercise 2.3  | _skipped_                                                   |
+| Exercise 2.4  | /src/Language/TiMachine.hs                                  |
+| Exercise 2.5  | /src/Language/TiMachine.hs                                  |
+| Exercise 2.6  | /src/Language/TiMachine.hs                                  |
+| Exercise 2.7  | /src/Language/TiMachine.hs                                  |
+| Exercise 2.8  | /exercises/exercise2-08.md                                  |
+| Exercise 2.9  | /exercises/exercise2-09.md                                  |
+| Exercise 2.10 | /src/Language/TiMachine.hs                                  |
+| Exercise 2.11 | /src/Language/TiMachine.hs                                  |
+| Exercise 2.12 | /exercises/exercise2-12.md                                  |
+| Exercise 2.13 | /src/Language/TiMachine.hs, /exercises/exercise2-13.md      |
+| Exercise 2.14 | /src/Language/TiMachine.hs                                  |
+| Exercise 2.15 | /exercises/exercise2-15.md                                  |
+| Exercise 2.16 | /src/Language/TiMachine.hs                                  |
+| Exercise 2.17 | /src/Language/TiMachine.hs                                  |
+| Exercise 2.18 | /src/Language/TiMachine.hs, /exercises/exercise2-18.md      |
+| Exercise 2.19 | /exercises/exercise2-19.md                                  |
+| Exercise 2.20 | /src/Language/TiMachine.hs, /exercises/exercise2-20.core    |
+| Exercise 2.21 | /src/Language/TiMachine.hs                                  |
+| Exercise 2.22 | /src/Language/TiMachine.hs, /exercises/exercise2-22.md      |
+| Exercise 2.23 | /exercises/exercise2-23.core                                |
+| Exercise 2.24 | /src/Language/TiMachine.hs, /exercises/exercise2-24.md      |
+| Exercise 2.25 | /exercises/exercise2-25.md                                  |
+| Exercise 2.26 | /src/Language/TiMachine.hs                                  |
+| Exercise 2.27 | /src/Language/TiMachineAlter.hs                             |
+| Exercise 2.28 | /src/Language/TiMachineAlter.hs                             |
+| Exercise 2.29 | /src/Language/TiMachineAlter.hs, /exercises/exercise2-29.md |
 
 </p>
 </details>

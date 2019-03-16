@@ -100,6 +100,7 @@ applyToStats statFun (output, stack, dump, heap, scDefs, stats)
   = (output, stack, dump, heap, scDefs, statFun stats)
 
 extraPreludeDefs :: CoreProgram
+#if __CLH_EXERCISE_2__ != 29
 extraPreludeDefs
   = [ ("False", [], EConstr 1 0)
     , ("True", [], EConstr 2 0)
@@ -117,6 +118,7 @@ extraPreludeDefs
     , ("printList", ["xs"], EAp (EAp (EAp (EVar "caseList") (EVar "xs")) (EVar "stop")) (EVar "printCons"))
     , ("printCons", ["h", "t"], EAp (EAp (EVar "print") (EVar "h")) (EAp (EVar "printList") (EVar "t")))
     ]
+#endif
 
 buildInitialHeap :: [CoreScDefn] -> (TiHeap, TiGlobals)
 buildInitialHeap scDefs
@@ -615,6 +617,7 @@ showOutput (output, _, _, _, _, _)
 #if __CLH_EXERCISE_2__ >= 27
 type Primitive = TiState -> TiState
 
+#if __CLH_EXERCISE_2__ != 29
 primitives
   = [ ("negate", primNeg)
     , ("+", (flip primArith (+))), ("-", (flip primArith (-)))
@@ -629,6 +632,7 @@ primitives
     , ("stop", primStop)
     , ("print", primPrint)
     ]
+#endif
 
 primStep state prim = prim state
 
@@ -820,5 +824,40 @@ primConstr (output, stack, dump, heap, globals, stats) tag arity
 
     stackLength = length stack
     currentStackLength = getCurrentStackLength stack dump
+
+#if __CLH_EXERCISE_2__ == 29
+extraPreludeDefs
+  = [ ("False", ["t", "f"], EVar "f")
+    , ("True", ["t", "f"], EVar "t")
+    , ("if", [], EVar "I")
+    , ("and", ["b1", "b2", "t", "f"], EAp (EAp (EVar "b1") (EAp (EAp (EVar "b2") (EVar "t")) (EVar "f"))) (EVar "f"))
+    , ("or", ["b1", "b2", "t", "f"], EAp (EAp (EVar "b1") (EVar "t")) (EAp (EAp (EVar "b2") (EVar "t")) (EVar "f")))
+    , ("xor", ["b1", "b2", "t", "f"], EAp (EAp (EVar "b1") (EAp (EAp (EVar "b2") (EVar "f")) (EVar "t"))) (EAp (EAp (EVar "b2") (EVar "t")) (EVar "f")))
+    , ("not", ["b", "t", "f"], EAp (EAp (EVar "b") (EVar "f")) (EVar "t"))
+    , ("pair", ["a", "b", "f"], EAp (EAp (EVar "f") (EVar "a")) (EVar "b"))
+    , ("casePair", [], EVar "I")
+    , ("fst", ["p"], EAp (EVar "p") (EVar "K"))
+    , ("snd", ["p"], EAp (EVar "p") (EVar "K1"))
+    , ("cons", ["a", "b", "cn", "cc"], EAp (EAp (EVar "cc") (EVar "a")) (EVar "b"))
+    , ("nil", ["cn", "cc"], EVar "cn")
+    , ("caseList", [], EVar "I")
+    , ("head", ["l"], EAp (EAp (EAp (EVar "caseList") (EVar "l")) (EVar "abort")) (EVar "K"))
+    , ("tail", ["l"], EAp (EAp (EAp (EVar "caseList") (EVar "l")) (EVar "abort")) (EVar "K1"))
+    , ("printList", ["xs"], EAp (EAp (EAp (EVar "caseList") (EVar "xs")) (EVar "stop")) (EVar "printCons"))
+    , ("printCons", ["h", "t"], EAp (EAp (EVar "print") (EVar "h")) (EAp (EVar "printList") (EVar "t")))
+    ]
+
+primitives
+  = [ ("negate", primNeg)
+    , ("+", (flip primArith (+))), ("-", (flip primArith (-)))
+    , ("*", (flip primArith (*))), ("/", (flip primArith div))
+    , (">", (flip primComp (>))), (">=", (flip primComp (>=)))
+    , ("<", (flip primComp (<))), ("<=", (flip primComp (<=)))
+    , ("==", (flip primComp (==))), ("~=", (flip primComp (/=)))
+    , ("abort", error "Program is aborted by abort primitive")
+    , ("stop", primStop)
+    , ("print", primPrint)
+    ]
+#endif
 #endif
 #endif
