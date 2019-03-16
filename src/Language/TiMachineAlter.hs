@@ -249,6 +249,7 @@ instantiateDef env heap (name, body)
 showState :: TiState -> ISeq
 showState (_, stack, _, heap, _, _)
   = iConcat [ showStack heap stack, iNewline
+            , iStr "Heap Size: ", iNum (statHSize heap), iNewline
             ]
 
 showStack :: TiHeap -> TiStack -> ISeq
@@ -302,6 +303,7 @@ showHeap :: TiHeap -> ISeq
 showHeap heap
   = iConcat [ iStr "Heap ["
             , iIndent (iInterleave iNewline (map showHeapItem (statHAddresses heap)))
+            , iStr "]"
             ]
     where
       showHeapItem addr

@@ -269,6 +269,7 @@ showHeap :: TiHeap -> ISeq
 showHeap heap
   = iConcat [ iStr "Heap ["
             , iIndent (iInterleave iNewline (map showHeapItem (hAddresses heap)))
+            , iStr "]"
             ]
     where
       showHeapItem addr
@@ -438,6 +439,7 @@ showStatHeapStats heap
 showHeap heap
   = iConcat [ iStr "Heap ["
             , iIndent (iInterleave iNewline (map showHeapItem (statHAddresses heap)))
+            , iStr "]"
             ]
     where
       showHeapItem addr
