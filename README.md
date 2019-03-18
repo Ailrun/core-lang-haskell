@@ -86,6 +86,6 @@ This repository is about an implementation of a simple functional language based
 </p>
 </details>
 
-# References
+## References
 
 <span id="reference-1">[Simon\[1\]](#text-1): Simon L Peyton Jones, David R Lester. January 1992. _Implementing functional languages: a tutorial_. Prentice Hall</span>
