@@ -1,9 +1,11 @@
 {-# LANGUAGE CPP #-}
 module Language.TiMachineGC where
 
+import Control.Arrow
 import Data.ISeq
 import Data.List
 import Data.StatHeap
+import Data.Tuple
 import Language.Parser
 import Language.Prelude
 import Language.Types
@@ -647,7 +649,7 @@ data Node
   | NMarked Node
 #endif
 
-gcHeapSize = 30
+gcHeapSize = 50
 
 #if __CLH_EXERCISE_2__ < 33
 markFrom heap addr
@@ -723,6 +725,7 @@ markFromGlobals heap globals = mapAccumL markGlobal heap globals
       in
         (h', (n, a'))
 
+#if __CLH_EXERCISE_2__ < 36
 gc (output, stack, dump, heap, globals, stats)
   = (output, stack', dump', heap', globals', stats)
   where
@@ -730,8 +733,10 @@ gc (output, stack, dump, heap, globals, stats)
     (dumpGCHeap, dump') = markFromDump globalGCHeap dump
     (stackGCHeap, stack') = markFromStack dumpGCHeap stack
     heap' = scanHeap stackGCHeap
+#endif
 
 #if __CLH_EXERCISE_2__ >= 35
+#if __CLH_EXERCISE_2__ < 36
 data Node
   = NAp Addr Addr
   | NSc Name [Name] CoreExpr
@@ -746,44 +751,42 @@ data MarkState
   | Visits Int
 
 markFrom heap addr
-  = markFromAuto addr statHNull heap
+  = markingAutomata addr statHNull heap
 
-markFromAuto :: Addr -> Addr -> TiHeap -> (TiHeap, Addr)
-markFromAuto f b h
+markingAutomata :: Addr -> Addr -> TiHeap -> (TiHeap, Addr)
+markingAutomata f b h
   = case (fNode, statHIsNull b) of
       (NAp a1 a2, _) ->
-        markFromAuto a1 f (updateF (NMarked (Visits 1) (NAp b a2)))
+        markingAutomata a1 f (updateF (NMarked (Visits 1) (NAp b a2)))
       (NInd a, _) ->
-        markFromAuto a b h
+        markingAutomata a b h
       (NData _ [], _) ->
-        markFromAuto f b (updateF (NMarked Done fNode))
+        markingAutomata f b (updateF (NMarked Done fNode))
       (NData t (a : as), _) ->
-        markFromAuto a f (updateF (NMarked (Visits 1) (NData t (b : as))))
+        markingAutomata a f (updateF (NMarked (Visits 1) (NData t (b : as))))
       (NMarked Done _, False) ->
         case bNode of
-          NMarked (Visits n) (NData t as) -> 
-            let (f', b', ms, as') = getNextStateForData f b n as
+          NMarked (Visits v) (NData t as) ->
+            let (f', b', ms', makeAs') = nextData v as
             in
-              markFromAuto f' b' (updateB (NMarked ms (NData t as')))
+              markingAutomata f' b' (updateB (NMarked ms' (NData t (makeAs' []))))
           NMarked (Visits 1) (NAp b' a2) ->
-            markFromAuto a2 b (updateB (NMarked (Visits 2) (NAp f b')))
+            markingAutomata a2 b (updateB (NMarked (Visits 2) (NAp f b')))
           NMarked (Visits 2) (NAp a1 b') ->
-            markFromAuto b b' (updateB (NMarked Done (NAp a1 f)))
+            markingAutomata b b' (updateB (NMarked Done (NAp a1 f)))
       (NMarked Done _, True) ->
         (h, f)
       _ ->
-        markFromAuto f b (updateF (NMarked Done fNode))
+        markingAutomata f b (updateF (NMarked Done fNode))
   where
     updateF = statHUpdate h f
     updateB = statHUpdate h b
 
-    getNextStateForData :: Addr -> Addr -> Int -> [Addr] -> (Addr, Addr, MarkState, [Addr])
-    getNextStateForData f b n as = loop n as id
-      where
-        loop 0 _ _ = error "Invalid gc mark is detected"
-        loop 1 [b'] t = (b, b', Done, t [f])
-        loop 1 (b':a:as) t = (a, b, (Visits (n + 1)), t (f:b':as))
-        loop n (a:as) t = loop (n - 1) as (t . (a:))
+    nextData v = foldl (makeNextData v) (statHNull, statHNull, Done, id) . zip [1..]
+    makeNextData v (f', b', ms', fun') (n, a)
+      | n == v = (b, a, ms', fun' . (f :))
+      | n == v + 1 = (a, b, Visits n, fun' . (b' :))
+      | otherwise = (f', b', ms', fun' . (a :))
 
     fNode = statHLookup h f
     bNode = statHLookup h b
@@ -810,6 +813,108 @@ showNode heap (NMarked Done n)
   = iConcat [ iStr "NMarked (", iStr "Done, ", showNode heap n, iStr ")" ]
 showNode heap (NMarked (Visits v) n)
   = iConcat [ iStr "NMarked (", iNum v, iStr ", ", showNode heap n, iStr ")" ]
+#else
+markFrom = undefined
+scanHeap = undefined
+#endif
+
+#if __CLH_EXERCISE_2__ >= 36
+data Node
+  = NAp Addr Addr
+  | NSc Name [Name] CoreExpr
+  | NNum Int
+  | NInd Addr
+  | NPrim Name Primitive
+  | NData Int [Addr]
+  | NForward Addr
+
+evacuateStack :: TiHeap -> TiHeap -> TiStack -> (TiHeap, TiHeap, TiStack)
+evacuateDump :: TiHeap -> TiHeap -> TiDump -> (TiHeap, TiHeap, TiDump)
+evacuateGlobals :: TiHeap -> TiHeap -> TiGlobals -> (TiHeap, TiHeap, TiGlobals)
+
+scavengeHeap :: TiHeap -> TiHeap -> TiHeap
+
+evacuateStack fromHeap toHeap = joinTriple . mapAccumL evacuateFrom (fromHeap, toHeap)
+
+evacuateDump fromHeap toHeap = joinTriple . mapAccumL evacuateFroms (fromHeap, toHeap)
+
+evacuateGlobals fromHeap toHeap = joinTriple . mapAccumL evacuateEntry (fromHeap, toHeap)
+  where
+    evacuateEntry (f, t) (n, a) = second (\a' -> (n, a')) (evacuateFrom (f, t) a)
+
+evacuateFroms :: (TiHeap, TiHeap) -> [Addr] -> ((TiHeap, TiHeap), [Addr])
+evacuateFroms = mapAccumL evacuateFrom
+
+evacuateFrom :: (TiHeap, TiHeap) -> Addr -> ((TiHeap, TiHeap), Addr)
+evacuateFrom (fromHeap, toHeap) addr =
+  case node of
+    NAp a1 a2 ->
+      let ((fromHeap'', toHeap''), _) = evacuateFroms (fromHeap', toHeap') [a1, a2]
+      in
+        ((fromHeap'', toHeap''), addr')
+    NInd a ->
+      let ((fromHeap'', toHeap''), a') = evacuateFrom (fromHeap, toHeap) a
+      in
+        ((statHUpdate fromHeap'' addr (NForward a'), toHeap''), a')
+    NData t as ->
+      let ((fromHeap'', toHeap''), _) = evacuateFroms (fromHeap', toHeap') as
+      in
+        ((fromHeap'', toHeap''), addr')
+    NForward a -> ((fromHeap, toHeap), a)
+    _ -> ((fromHeap', toHeap'), addr')
+  where
+    node = statHLookup fromHeap addr
+    (toHeap', addr') = statHAlloc toHeap node
+    fromHeap' = statHUpdate fromHeap addr (NForward addr')
+
+scavengeHeap fromHeap toHeap = toHeap'
+  where
+    toHeap' = foldl (scavengeFrom fromHeap) toHeap (statHAddresses toHeap)
+
+scavengeFrom :: TiHeap -> TiHeap -> Addr -> TiHeap
+scavengeFrom fromHeap toHeap addr =
+  case node of
+    NAp a1 a2 ->
+      let [a1', a2'] = getToAddrs [a1, a2]
+      in
+        statHUpdate toHeap addr (NAp a1' a2')
+    NData t as ->
+      let as' = getToAddrs as
+      in
+        statHUpdate toHeap addr (NData t as')
+    _ -> toHeap
+  where
+    node = statHLookup toHeap addr
+    getToAddrs = map getToAddr
+    getToAddr = (\(NForward a) -> a) . statHLookup fromHeap
+
+breakTriple :: (a, b, c) -> ((a, b), c)
+breakTriple (a, b, c) = ((a, b), c)
+
+joinTriple :: ((a, b), c) -> (a, b, c)
+joinTriple ((a, b), c) = (a, b, c)
+
+gc state@(output, stack, dump, heap, globals, stats)
+  = (output, stack', dump', heap', globals', stats)
+  where
+    (globalsFromHeap, globalsToHeap, globals') = evacuateGlobals heap statHInitial globals
+    (dumpFromHeap, dumpToHeap, dump') = evacuateDump globalsFromHeap globalsToHeap dump
+    (stackFromHeap, stackToHeap, stack') = evacuateStack dumpFromHeap dumpToHeap stack
+    heap' = scavengeHeap stackFromHeap stackToHeap
+
+showNode _ (NAp a1 a2)
+  = iConcat [ iStr "NAp ", showAddrToSeq a1, iStr " ", showAddrToSeq a2 ]
+showNode _ (NSc scName argNames body) = iStr ("NSc " ++ scName)
+showNode _ (NNum n) = iStr "NNum " `iAppend` iNum n
+showNode heap (NInd a)
+  = iConcat [ iStr "NInd (", showNode heap (statHLookup heap a), iStr ")" ]
+showNode heap (NPrim name _)
+  = iConcat [ iStr "NPrim ", iStr name ]
+showNode heap (NData tag args)
+  = iConcat [ iStr "NData ", iNum tag, iStr ", ", iInterleave (iStr " ") (map showFWAddr args) ]
+showNode heap (NForward addr)
+  = iConcat [ iStr "NForward ", showFWAddr addr ]
+#endif
 #endif
 #endif
 #else

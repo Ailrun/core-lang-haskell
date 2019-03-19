@@ -82,6 +82,8 @@ This repository is about an implementation of a simple functional language based
 | Exercise 2.32 | /src/Language/TiMachineGC.hs                                |
 | Exercise 2.33 | /src/Language/TiMachineGC.hs                                |
 | Exercise 2.34 | /exercises/exercise2-34.md                                  |
+| Exercise 2.35 | /src/Language/TiMachineGC.hs                                |
+| Exercise 2.36 | /src/Language/TiMachineGC.hs                                |
 
 </p>
 </details>
