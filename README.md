@@ -94,8 +94,9 @@ This repository is about an implementation of a simple functional language based
 <summary>Exercises in Chapter 3</summary>
 <p>
 
-| Name          | Files                                                       |
-|---------------|-------------------------------------------------------------|
+| Name         | Files                      |
+|--------------|----------------------------|
+| Exercise 3.1 | /exercises/exercise3-01.md |
 
 </p>
 </details>
