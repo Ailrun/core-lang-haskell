@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Language.GMachine
   ( run
   , eval
@@ -24,6 +25,7 @@ getCode (code, _, _, _, _) = code
 putCode :: GmCode -> GmState -> GmState
 putCode code (_, stack, heap, globals, stats) = (code, stack, heap, globals, stats)
 
+#if __CLH_EXERCISE_3__ < 7
 data Instruction
   = Unwind
   | PushGlobal Name
@@ -32,6 +34,7 @@ data Instruction
   | MkAp
   | Slide Int
   deriving (Show, Read, Eq)
+#endif
 
 type GmStack = [Addr]
 
@@ -47,10 +50,13 @@ getHeap (_, _, heap, _, _) = heap
 putHeap :: GmHeap -> GmState -> GmState
 putHeap heap (code, stack, _, globals, stats) = (code, stack, heap, globals, stats)
 
+#if __CLH_EXERCISE_3__ < 8
 data Node
   = NNum Int
   | NAp Addr Addr
   | NGlobal Int GmCode
+  deriving (Show, Read, Eq)
+#endif
 
 type GmGlobals = Assoc Name Addr
 
@@ -94,12 +100,18 @@ step state = dispatch i (putCode is state)
     i : is = getCode state
 
 dispatch :: Instruction -> GmState -> GmState
+#if __CLH_EXERCISE_3__ < 9
+#if __CLH_EXERCISE_3__ < 7
 dispatch (PushGlobal f) = pushGlobal f
 dispatch (PushInt n) = pushInt n
 dispatch MkAp = mkAp
 dispatch (Push n) = push n
 dispatch (Slide n) = slide n
 dispatch Unwind = unwind
+#else
+dispatch = undefined
+#endif
+#endif
 
 pushGlobal :: Name -> GmState -> GmState
 pushGlobal name state = putStack (a : getStack state) state
@@ -107,9 +119,11 @@ pushGlobal name state = putStack (a : getStack state) state
     a = aLookup (getGlobals state) name (error ("Undeclared global " ++ name))
 
 pushInt :: Int -> GmState -> GmState
+#if __CLH_EXERCISE_3__ < 6
 pushInt n state = putHeap heap' (putStack (a : getStack state) state)
   where
     (heap', a) = hAlloc (getHeap state) (NNum n)
+#endif
 
 mkAp :: GmState -> GmState
 mkAp state = putHeap heap' (putStack (a : as) state)
@@ -132,6 +146,7 @@ slide n state = putStack (a : drop n as) state
     a : as = getStack state
 
 unwind :: GmState -> GmState
+#if __CLH_EXERCISE_3__ < 9
 unwind state = newState (hLookup heap a)
   where
     stack@(a : as) = getStack state
@@ -141,6 +156,7 @@ unwind state = newState (hLookup heap a)
     newState (NGlobal n c)
       | length as < n = error "Unwinding with too few arguments"
       | otherwise = putCode c state
+#endif
 
 compile :: CoreProgram -> GmState
 compile program = (initialCode, [], heap, globals, statInitial)
@@ -166,7 +182,13 @@ compileSc :: CoreScDefn -> GmCompiledSc
 compileSc (name, argNames, body) = (name, length argNames, compileR body (zip argNames [0..]))
 
 compileR :: GmCompiler
+#if __CLH_EXERCISE_3__ < 10
+#if __CLH_EXERCISE_3__ < 7
 compileR e env = compileC e env ++ [Slide (length env + 1), Unwind]
+#else
+compileR = undefined
+#endif
+#endif
 
 type GmCompiler = CoreExpr -> GmEnvironment -> GmCode
 
@@ -218,12 +240,14 @@ showInstructions is
             ]
 
 showInstruction :: Instruction -> ISeq
+#if __CLH_EXERCISE_3__ < 7
 showInstruction Unwind = iStr "Unwind"
 showInstruction (PushGlobal f) = iStr "PushGlobal " `iAppend` iStr f
 showInstruction (Push n) = iStr "Push " `iAppend` iNum n
 showInstruction (PushInt n) = iStr "PushInt " `iAppend` iNum n
 showInstruction MkAp = iStr "MkAp"
 showInstruction (Slide n) = iStr "Slide " `iAppend` iNum n
+#endif
 
 showState :: GmState -> ISeq
 showState state
@@ -242,13 +266,104 @@ showStackItem state addr
             ]
 
 showNode :: GmState -> Addr -> Node -> ISeq
+#if __CLH_EXERCISE_3__ < 7
 showNode state addr (NNum n) = iNum n
 showNode state addr (NGlobal _ _) = iStr "Global " `iAppend` iStr gName
   where
     gName = head [ name | (name, addr') <- getGlobals state, addr == addr' ]
 showNode state addr (NAp a1 a2)
   = iConcat [ iStr "Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2) ]
+#endif
 
 showStats :: GmState -> ISeq
 showStats state
   = iConcat [ iStr "Steps taken = ", iNum (statGetSteps (getStats state)) ]
+
+#if __CLH_EXERCISE_3__ >= 6
+pushInt n state
+  | not (hIsNull a) = putStack stack' state
+  where
+    stack' = a : getStack state
+    a = aLookup (getGlobals state) (show n) hNull
+pushInt n state
+  = putHeap heap' (putGlobals global' (putStack stack' state))
+  where
+    stack' = a : getStack state
+    global' = (show n, a) : getGlobals state
+    (heap', a) = hAlloc (getHeap state) (NNum n)
+
+#if __CLH_EXERCISE_3__ >= 7
+data Instruction
+  = Unwind
+  | PushGlobal Name
+  | PushInt Int
+  | Push Int
+  | MkAp
+  | Update Int
+  | Pop Int
+  deriving (Show, Read, Eq)
+
+showInstruction Unwind = iStr "Unwind"
+showInstruction (PushGlobal f) = iStr "PushGlobal " `iAppend` iStr f
+showInstruction (Push n) = iStr "Push " `iAppend` iNum n
+showInstruction (PushInt n) = iStr "PushInt " `iAppend` iNum n
+showInstruction MkAp = iStr "MkAp"
+showInstruction (Update n) = iStr "Update " `iAppend` iNum n
+showInstruction (Pop n) = iStr "Pop " `iAppend` iNum n
+
+#if __CLH_EXERCISE_3__ >= 8
+data Node
+  = NNum Int
+  | NAp Addr Addr
+  | NGlobal Int GmCode
+  | NInd Addr
+  deriving (Show, Read, Eq)
+
+showNode state addr (NNum n) = iNum n
+showNode state addr (NGlobal _ _) = iStr "Global " `iAppend` iStr gName
+  where
+    gName = head [ name | (name, addr') <- getGlobals state, addr == addr' ]
+showNode state addr (NAp a1 a2)
+  = iConcat [ iStr "Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2) ]
+showNode state addr (NInd a)
+  = iConcat [ iStr "Ind ", iStr (showAddr a) ]
+
+#if __CLH_EXERCISE_3__ >= 9
+dispatch (PushGlobal f) = pushGlobal f
+dispatch (PushInt n) = pushInt n
+dispatch MkAp = mkAp
+dispatch (Push n) = push n
+dispatch (Update n) = update n
+dispatch (Pop n) = pop n
+dispatch Unwind = unwind
+
+update :: Int -> GmState -> GmState
+update n state = putStack stack' (putHeap heap' state)
+  where
+    heap' = hUpdate (getHeap state) rA (NInd a)
+    rA = stack' !! n
+    a : stack' = getStack state
+
+pop :: Int -> GmState -> GmState
+pop n state = putStack (drop n (getStack state)) state
+
+unwind state = newState (hLookup heap a)
+  where
+    stack@(a : as) = getStack state
+    heap = getHeap state
+    newState (NNum n) = state
+    newState (NAp a1 a2) = putCode [Unwind] (putStack (a1 : stack) state)
+    newState (NGlobal n c)
+      | length as < n = error "Unwinding with too few arguments"
+      | otherwise = putCode c state
+    newState (NInd a') = putCode [Unwind] (putStack (a' : as) state)
+
+#if __CLH_EXERCISE_3__ >= 10
+compileR e env = compileC e env ++ [Update d, Pop d, Unwind]
+  where
+    d = length env
+#endif
+#endif
+#endif
+#endif
+#endif

@@ -94,12 +94,18 @@ This repository is about an implementation of a simple functional language based
 <summary>Exercises in Chapter 3</summary>
 <p>
 
-| Name         | Files                       |
-|--------------|-----------------------------|
-| Exercise 3.1 | /exercises/exercise3-01.v   |
-| Exercise 3.2 | ~/exercises/exercise3-02.v~ |
-| Exercise 3.3 | /exercises/exercise3-03.md  |
-| Exercise 3.4 | /exercises/exercise3-04.md  |
+| Name          | Files                       |
+|---------------|-----------------------------|
+| Exercise 3.1  | /exercises/exercise3-01.v   |
+| Exercise 3.2  | ~/exercises/exercise3-02.v~ |
+| Exercise 3.3  | /exercises/exercise3-03.md  |
+| Exercise 3.4  | /exercises/exercise3-04.md  |
+| Exercise 3.5  | _skipped_                   |
+| Exercise 3.6  | /src/Language/GMachine.hs   |
+| Exercise 3.7  | /src/Language/GMachine.hs   |
+| Exercise 3.8  | /src/Language/GMachine.hs   |
+| Exercise 3.9  | /src/Language/GMachine.hs   |
+| Exercise 3.10 | /src/Language/GMachine.hs   |
 
 </p>
 </details>
