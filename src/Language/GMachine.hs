@@ -62,8 +62,6 @@ type GmGlobals = Assoc Name Addr
 
 getGlobals :: GmState -> GmGlobals
 getGlobals (_, _, _, globals, _) = globals
-putGlobals :: GmGlobals -> GmState -> GmState
-putGlobals globals (code, stack, heap, _, stats) = (code, stack, heap, globals, stats)
 
 statInitial :: GmStats
 statIncSteps :: GmStats -> GmStats
@@ -280,6 +278,9 @@ showStats state
   = iConcat [ iStr "Steps taken = ", iNum (statGetSteps (getStats state)) ]
 
 #if __CLH_EXERCISE_3__ >= 6
+putGlobals :: GmGlobals -> GmState -> GmState
+putGlobals globals (code, stack, heap, _, stats) = (code, stack, heap, globals, stats)
+
 pushInt n state
   | not (hIsNull a) = putStack stack' state
   where
