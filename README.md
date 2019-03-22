@@ -99,6 +99,7 @@ This repository is about an implementation of a simple functional language based
 | Exercise 3.1 | /exercises/exercise3-01.v   |
 | Exercise 3.2 | ~/exercises/exercise3-02.v~ |
 | Exercise 3.3 | /exercises/exercise3-03.md  |
+| Exercise 3.4 | /exercises/exercise3-04.md  |
 
 </p>
 </details>
