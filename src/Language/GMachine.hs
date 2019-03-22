@@ -201,7 +201,7 @@ compileC (EVar v) env
   where
     vInd = aLookup env v (error "Can't happen")
 compileC (ENum n) env = [PushInt n]
-compileC (EAp e1 e2) env = compileC e1 env ++ compileC e2 (argOffset 1 env) ++ [MkAp]
+compileC (EAp e1 e2) env = compileC e2 env ++ compileC e1 (argOffset 1 env) ++ [MkAp]
 
 argOffset :: Int -> GmEnvironment -> GmEnvironment
 argOffset n env = [ (v, m + n) | (v, m) <- env ]
