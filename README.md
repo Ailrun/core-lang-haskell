@@ -106,6 +106,7 @@ This repository is about an implementation of a simple functional language based
 | Exercise 3.8  | /src/Language/GMachine.hs   |
 | Exercise 3.9  | /src/Language/GMachine.hs   |
 | Exercise 3.10 | /src/Language/GMachine.hs   |
+| Exercise 3.11 | /exercises/exercise3-11.md  |
 
 </p>
 </details>
