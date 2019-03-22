@@ -227,14 +227,13 @@ showSc :: GmState -> (Name, Addr) -> ISeq
 showSc state (name, addr)
   = iConcat [ iStr "Code for ", iStr name, iNewline
             , showInstructions code, iNewline
-            , iNewline
             ]
     where
       (NGlobal _ code) = hLookup (getHeap state) addr
 
 showInstructions :: GmCode -> ISeq
 showInstructions is
-  = iConcat [ iStr "  Code: {", iIndent (iInterleave iNewline (map showInstruction is)), iStr "}", iNewline
+  = iConcat [ iStr "  Code:  { ", iIndent (iInterleave iNewline (map showInstruction is)), iStr " }", iNewline
             ]
 
 showInstruction :: Instruction -> ISeq
@@ -255,7 +254,7 @@ showState state
 
 showStack :: GmState -> ISeq
 showStack state
-  = iConcat [ iStr "  Stack: [", iIndent (iInterleave iNewline (map (showStackItem state) (reverse (getStack state)))), iStr "]"
+  = iConcat [ iStr "  Stack: [ ", iIndent (iInterleave iNewline (map (showStackItem state) (reverse (getStack state)))), iStr " ]"
             ]
 
 showStackItem :: GmState -> Addr -> ISeq
