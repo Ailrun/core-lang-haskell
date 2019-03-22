@@ -1,5 +1,10 @@
 {-# LANGUAGE CPP #-}
-module Language.TiMachineAlter where
+module Language.TiMachineAlter
+  ( run
+  , compile
+  , eval
+  )
+where
 
 import Data.ISeq
 import Data.List

@@ -1,5 +1,10 @@
 {-# LANGUAGE CPP #-}
-module Language.TiMachineGC where
+module Language.TiMachineGC
+  ( run
+  , compile
+  , eval
+  )
+where
 
 import Control.Arrow
 import Data.ISeq

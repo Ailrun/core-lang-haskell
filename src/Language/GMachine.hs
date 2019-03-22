@@ -1,4 +1,9 @@
-module Language.GMachine where
+module Language.GMachine
+  ( run
+  , eval
+  , compile
+  )
+where
 
 import Data.List
 import Data.ISeq
