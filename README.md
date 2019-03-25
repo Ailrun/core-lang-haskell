@@ -126,6 +126,12 @@ This repository is about an implementation of a simple functional language based
 | Exercise 3.28 | /src/Language/GMachine.hs                             |
 | Exercise 3.29 | /src/Language/GMachine.hs, /exercises/exercise3-29.md |
 | Exercise 3.30 | _skipped_                                             |
+| Exercise 3.31 | /src/Language/GMachine.hs                             |
+| Exercise 3.32 | /src/Language/GMachine.hs                             |
+| Exercise 3.33 | /src/Language/GMachine.hs                             |
+| Exercise 3.34 | /src/Language/GMachine.hs                             |
+| Exercise 3.35 | /src/Language/GMachine.hs                             |
+| Exercise 3.36 | _skipped_                                             |
 
 </p>
 </details>

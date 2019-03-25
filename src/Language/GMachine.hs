@@ -260,7 +260,7 @@ showSc state (name, addr)
 
 showInstructions :: GmCode -> ISeq
 showInstructions is
-  = iConcat [ iStr "  Code:  { ", iIndent (iInterleave iNewline (map showInstruction is)), iStr " }", iNewline
+  = iConcat [ iStr "  Code:   { ", iIndent (iInterleave iNewline (map showInstruction is)), iStr " }", iNewline
             ]
 
 showInstruction :: Instruction -> ISeq
@@ -283,7 +283,7 @@ showState state
 
 showStack :: GmState -> ISeq
 showStack state
-  = iConcat [ iStr "  Stack: [ ", iIndent (iInterleave iNewline (map (showStackItem state) (reverse (getStack state)))), iStr " ]"
+  = iConcat [ iStr "  Stack:  [ ", iIndent (iInterleave iNewline (map (showStackItem state) (reverse (getStack state)))), iStr " ]"
             ]
 
 showStackItem :: GmState -> Addr -> ISeq
@@ -345,6 +345,7 @@ showInstruction (Pop n) = iStr "Pop " `iAppend` iNum n
 #endif
 
 #if __CLH_EXERCISE_3__ >= 8
+#if __CLH_EXERCISE_3__ < 31
 data Node
   = NNum Int
   | NAp Addr Addr
@@ -360,6 +361,7 @@ showNode state addr (NAp a1 a2)
   = iConcat [ iStr "Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2) ]
 showNode state addr (NInd a)
   = iConcat [ iStr "Ind ", iStr (showAddr a) ]
+#endif
 
 #if __CLH_EXERCISE_3__ >= 9
 #if __CLH_EXERCISE_3__ < 15
@@ -479,6 +481,7 @@ alloc n state = putHeap heap' (putStack stack' state)
     (heap', as) = allocNodes n (getHeap state)
 
 #if __CLH_EXERCISE_3__ >= 16
+#if __CLH_EXERCISE_3__ < 35
 compileC (EVar v) env
   | v `elem` aDomain env = [Push vInd]
   | otherwise = [PushGlobal v]
@@ -489,6 +492,7 @@ compileC (EAp e1 e2) env = compileC e2 env ++ compileC e1 (argOffset 1 env) ++ [
 compileC (ELet isRec defs e) env
   | isRec = compileLetRec compileC defs e env
   | otherwise = compileLet compileC defs e env
+#endif
 
 compileLet :: GmCompiler -> [(Name, CoreExpr)] -> GmCompiler
 compileLet comp defs expr env
@@ -519,7 +523,9 @@ compileLetRec' ((name, expr) : defs) env
   = compileC expr env ++ [Update (length defs)] ++ compileLetRec' defs env
 
 #if __CLH_EXERCISE_3__ >= 21
+#if __CLH_EXERCISE_3__ < 31
 type GmState = (GmCode, GmStack, GmDump, GmHeap, GmGlobals, GmStats)
+#endif
 
 type GmDump = [GmDumpItem]
 
@@ -527,6 +533,7 @@ type GmDumpItem = (GmCode, GmStack)
 
 getDump :: GmState -> GmDump
 putDump :: GmDump -> GmState -> GmState
+#if __CLH_EXERCISE_3__ < 31
 getDump (_, _, dump, _, _, _) = dump
 putDump dump (code, stack, _, heap, globals, stats) = (code, stack, dump, heap, globals, stats)
 
@@ -544,8 +551,10 @@ putGlobals globals (code, stack, dump, heap, _, stats) = (code, stack, dump, hea
 
 getStats (_, _, _, _, _, stats) = stats
 putStats stats (code, stack, dump, heap, globals, _) = (code, stack, dump, heap, globals, stats)
+#endif
 
 #if __CLH_EXERCISE_3__ >= 22
+#if __CLH_EXERCISE_3__ < 32
 data Instruction
   = Unwind
   | PushGlobal Name
@@ -562,7 +571,9 @@ data Instruction
   | Eq | Ne | Lt | Le | Gt | Ge
   | Cond GmCode GmCode
   deriving (Show, Read, Eq)
+#endif
 
+#if __CLH_EXERCISE_3__ < 32
 showInstruction Unwind = iStr "Unwind"
 showInstruction (PushGlobal f) = iStr "PushGlobal " `iAppend` iStr f
 showInstruction (Push n) = iStr "Push " `iAppend` iNum n
@@ -586,16 +597,19 @@ showInstruction Gt = iStr "Gt"
 showInstruction Ge = iStr "Ge"
 showInstruction (Cond c1 c2)
   = iConcat [ iStr "Cond ", showInstructions c1, iStr " ", showInstructions c2 ]
+#endif
 
+#if __CLH_EXERCISE_3__ < 31
 showState state
   = iConcat [ showStack state, iNewline
             , showDump state, iNewline
             , showInstructions (getCode state), iNewline
             ]
+#endif
 
 showDump :: GmState -> ISeq
 showDump state
-  = iConcat [ iStr "  Dump:  ["
+  = iConcat [ iStr "  Dump:   ["
             , iIndent . iInterleave iNewline . map showDumpItem . reverse . getDump $ state
             , iStr " ]"
             ]
@@ -705,9 +719,7 @@ boxBoolean b state
 comparison :: (Int -> Int -> Bool) -> GmState -> GmState
 comparison = primitive2 boxBoolean unboxInteger
 
-{-
-  | Cond GmCode GmCode
--}
+#if __CLH_EXERCISE_3__ < 33
 dispatch (PushGlobal f) = pushGlobal f
 dispatch (PushInt n) = pushInt n
 dispatch MkAp = mkAp
@@ -730,6 +742,7 @@ dispatch Ge = comparison (>=)
 dispatch (Cond c1 c2) = cond c1 c2
 dispatch Unwind = unwind
 dispatch Eval = evalInstruction
+#endif
 
 cond :: GmCode -> GmCode -> GmState -> GmState
 cond c1 c2 state = putStack stack' (putCode code' state)
@@ -743,12 +756,18 @@ cond c1 c2 state = putStack stack' (putCode code' state)
     code = getCode state
 
 #if __CLH_EXERCISE_3__ >= 27
+#if __CLH_EXERCISE_3__ < 34
+#if __CLH_EXERCISE_3__ < 31
 compile program
   = (initialCode, [], [], heap, globals, statInitial)
   where
     (heap, globals) = buildInitialHeap program
+#else
+compile = undefined
+#endif
 
 initialCode = [PushGlobal "main", Eval]
+#endif
 
 compiledPrimitives
   = [ ("+", 2, [Push 1, Eval, Push 1, Eval, Add, Update 2, Pop 2, Unwind])
@@ -771,6 +790,7 @@ compileR e env = compileE e env ++ [Update d, Pop d, Unwind]
     d = length env
 
 compileE :: GmCompiler
+#if __CLH_EXERCISE_3__ < 35
 compileE (ENum n) env = [PushInt n]
 compileE (ELet isRec defs e) env
   | isRec = compileLetRec compileE defs e env
@@ -782,6 +802,7 @@ compileE (EAp (EAp (EVar name) e1) e2) env
 compileE (EAp (EVar "negate") e) env = compileE e env ++ [Neg]
 compileE (EAp (EAp (EAp (EVar "if") e1) e2) e3) env = compileE e1 env ++ [Cond (compileE e2 env) (compileE e3 env)]
 compileE e env = compileC e env ++ [Eval]
+#endif
 
 builtInDyadic :: Assoc Name Instruction
 builtInDyadic
@@ -790,6 +811,7 @@ builtInDyadic
     ]
 
 #if __CLH_EXERCISE_3__ >= 29
+#if __CLH_EXERCISE_3__ < 33
 unwind state = newState (hLookup heap a)
   where
     stack@(a : as) = getStack state
@@ -806,6 +828,271 @@ unwind state = newState (hLookup heap a)
           _ -> error "Unwinding with too few arguments"
       | otherwise = putCode c (putStack (rearrange n heap stack) state)
     newState (NInd a') = putCode [Unwind] (putStack (a' : as) state)
+#endif
+
+#if __CLH_EXERCISE_3__ >= 31
+type GmState = (GmOutput, GmCode, GmStack, GmDump, GmHeap, GmGlobals, GmStats)
+
+type GmOutput = String
+
+getOutput :: GmState -> GmOutput
+putOutput :: GmOutput -> GmState -> GmState
+getOutput (output, _, _, _, _, _, _) = output
+putOutput output (_, code, stack, dump, heap, globals, stats) = (output, code, stack, dump, heap, globals, stats)
+
+getDump (_, _, _, dump, _, _, _) = dump
+putDump dump (output, code, stack, _, heap, globals, stats) = (output, code, stack, dump, heap, globals, stats)
+
+getCode (_, code, _, _, _, _, _) = code
+putCode code (output, _, stack, dump, heap, globals, stats) = (output, code, stack, dump, heap, globals, stats)
+
+getStack (_, _, stack, _, _, _, _) = stack
+putStack stack (output, code, _, dump, heap, globals, stats) = (output, code, stack, dump, heap, globals, stats)
+
+getHeap (_, _, _, _, heap, _, _) = heap
+putHeap heap (output, code, stack, dump, _, globals, stats) = (output, code, stack, dump, heap, globals, stats)
+
+getGlobals (_, _, _, _, _, globals, _) = globals
+putGlobals globals (output, code, stack, dump, heap, _, stats) = (output, code, stack, dump, heap, globals, stats)
+
+getStats (_, _, _, _, _, _, stats) = stats
+putStats stats (output, code, stack, dump, heap, globals, _) = (output, code, stack, dump, heap, globals, stats)
+
+data Node
+  = NNum Int
+  | NAp Addr Addr
+  | NGlobal Int GmCode
+  | NInd Addr
+  | NConstr Int [Addr]
+  deriving (Show, Read, Eq)
+
+showState state
+  = iConcat [ showOutput state, iNewline
+            , showStack state, iNewline
+            , showDump state, iNewline
+            , showInstructions (getCode state), iNewline
+            ]
+
+showOutput :: GmState -> ISeq
+showOutput state = iConcat [ iStr "  Output: \"", iStr (getOutput state), iStr "\"" ]
+
+showNode state addr (NNum n) = iNum n
+showNode state addr (NGlobal _ _) = iStr "Global " `iAppend` iStr gName
+  where
+    gName = head [ name | (name, addr') <- getGlobals state, addr == addr' ]
+showNode state addr (NAp a1 a2)
+  = iConcat [ iStr "Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2) ]
+showNode state addr (NInd a)
+  = iConcat [ iStr "Ind ", iStr (showAddr a) ]
+showNode state addr (NConstr t as)
+  = iConcat [ iStr "Cons ", iNum t, iStr " [", iInterleave (iStr ", ") (map (iStr . showAddr) as), iStr "]" ]
+
+#if __CLH_EXERCISE_3__ >= 32
+data Instruction
+  = Unwind
+  | PushGlobal Name
+  | PushInt Int
+  | Push Int
+  | MkAp
+  | Update Int
+  | Pop Int
+  | Alloc Int
+  | Slide Int
+  | Eval
+  | Add | Sub | Mul | Div
+  | Neg
+  | Eq | Ne | Lt | Le | Gt | Ge
+  | Cond GmCode GmCode
+  | Pack Int Int
+  | CaseJump (Assoc Int GmCode)
+  | Split Int
+  | Print
+  deriving (Show, Read, Eq)
+
+showInstruction Unwind = iStr "Unwind"
+showInstruction (PushGlobal f) = iStr "PushGlobal " `iAppend` iStr f
+showInstruction (Push n) = iStr "Push " `iAppend` iNum n
+showInstruction (PushInt n) = iStr "PushInt " `iAppend` iNum n
+showInstruction MkAp = iStr "MkAp"
+showInstruction (Update n) = iStr "Update " `iAppend` iNum n
+showInstruction (Pop n) = iStr "Pop " `iAppend` iNum n
+showInstruction (Alloc n) = iStr "Alloc " `iAppend` iNum n
+showInstruction (Slide n) = iStr "Slide " `iAppend` iNum n
+showInstruction Eval = iStr "Eval"
+showInstruction Add = iStr "Add"
+showInstruction Sub = iStr "Sub"
+showInstruction Mul = iStr "Mul"
+showInstruction Div = iStr "Div"
+showInstruction Neg = iStr "Neg"
+showInstruction Eq = iStr "Eq"
+showInstruction Ne = iStr "Ne"
+showInstruction Lt = iStr "Lt"
+showInstruction Le = iStr "Le"
+showInstruction Gt = iStr "Gt"
+showInstruction Ge = iStr "Ge"
+showInstruction (Cond c1 c2)
+  = iConcat [ iStr "Cond ", showInstructions c1, iStr " ", showInstructions c2 ]
+showInstruction (Pack tag arity)
+  = iConcat [ iStr "Pack ", iNum tag, iStr " ", iNum arity ]
+showInstruction (CaseJump alters) = iStr "CaseJump " `iAppend` showAlters alters
+showInstruction (Split arity) = iStr "Split " `iAppend` iNum arity
+showInstruction Print = iStr "Print"
+
+showAlters :: Assoc Int GmCode -> ISeq
+showAlters alters
+  = iConcat [ iStr "[", iIndent (iInterleave iNewline (map showAlter alters)), iStr "]"]
+
+showAlter :: (Int, GmCode) -> ISeq
+showAlter (tag, code)
+  = iConcat [ iNum tag, iStr " -> [", showInstructions code, iStr "]" ]
+
+#if __CLH_EXERCISE_3__ >= 33
+dispatch (PushGlobal f) = pushGlobal f
+dispatch (PushInt n) = pushInt n
+dispatch MkAp = mkAp
+dispatch (Push n) = push n
+dispatch (Update n) = update n
+dispatch (Pop n) = pop n
+dispatch (Alloc n) = alloc n
+dispatch (Slide n) = slide n
+dispatch Add = arithmetic2 (+)
+dispatch Sub = arithmetic2 (-)
+dispatch Mul = arithmetic2 (*)
+dispatch Div = arithmetic2 div
+dispatch Neg = arithmetic1 negate
+dispatch Eq = comparison (==)
+dispatch Ne = comparison (/=)
+dispatch Lt = comparison (<)
+dispatch Le = comparison (<=)
+dispatch Gt = comparison (>)
+dispatch Ge = comparison (>=)
+dispatch (Cond c1 c2) = cond c1 c2
+dispatch (Pack tag arity) = pack tag arity
+dispatch (CaseJump alters) = caseJump alters
+dispatch (Split arity) = split arity
+dispatch Unwind = unwind
+dispatch Eval = evalInstruction
+dispatch Print = printInstruction
+
+pack :: Int -> Int -> GmState -> GmState
+pack tag arity state = putHeap heap' (putStack stack' state)
+  where
+    stack' = a : drop arity stack
+    (heap', a) = hAlloc (getHeap state) (NConstr tag args)
+    args = take arity stack
+    stack = getStack state
+
+caseJump :: Assoc Int GmCode -> GmState -> GmState
+caseJump alters state = putCode code' state
+  where
+    code' = c' ++ getCode state
+    c' = aLookup alters tag (error ("No case for constructor " ++ show tag))
+    NConstr tag _ = hLookup (getHeap state) a
+    a : _ = getStack state
+
+split :: Int -> GmState -> GmState
+split n state = putStack stack' state
+  where
+    stack' = args ++ as
+    NConstr _ args = hLookup (getHeap state) a
+    a : as = getStack state
+
+printInstruction :: GmState -> GmState
+printInstruction state =
+  case node of
+    NNum n -> putStack as (putOutput (output ++ show n) state)
+    NConstr _ args -> putCode (cCode (length args) ++ code) (putStack (args ++ as) state)
+    _ -> error "Result is invalid to be printed"
+  where
+    output = getOutput state
+    code = getCode state
+    cCode n = concat (replicate n [Eval, Print])
+    node = hLookup (getHeap state) a
+    a : as = getStack state
+
+unwind state = newState (hLookup heap a)
+  where
+    stack@(a : as) = getStack state
+    heap = getHeap state
+    newState (NNum n) =
+      case getDump state of
+        (c, as') : dump' -> putDump dump' (putCode c (putStack (a : as') state))
+        _ -> state
+    newState (NAp a1 a2) = putCode [Unwind] (putStack (a1 : stack) state)
+    newState (NGlobal n c)
+      | length as < n =
+        case getDump state of
+          (c, as') : dump' -> putDump dump' (putCode c (putStack ((last stack) : as') state))
+          _ -> error "Unwinding with too few arguments"
+      | otherwise = putCode c (putStack (rearrange n heap stack) state)
+    newState (NInd a') = putCode [Unwind] (putStack (a' : as) state)
+    newState (NConstr _ _) =
+      case getDump state of
+        (c, as') : dump' -> putDump dump' (putCode c (putStack (a : as') state))
+        _ -> state
+
+#if __CLH_EXERCISE_3__ >= 34
+compileAlters :: (Int -> GmCompiler) -> [CoreAlter] -> GmEnvironment -> Assoc Int GmCode
+compileAlters comp alters env
+  = [ (tag, comp (length names) body (zip names [0..] ++ argOffset (length names) env))
+    | (tag, names, body) <- alters
+    ]
+
+compileE' :: Int -> GmCompiler
+compileE' offset expr env
+  = [Split offset] ++ compileE expr env ++ [Slide offset]
+
+compile program
+  = ([], initialCode, [], [], heap, globals, statInitial)
+  where
+    (heap, globals) = buildInitialHeap program
+
+initialCode = [PushGlobal "main", Eval, Print]
+
+#if __CLH_EXERCISE_3__ >= 35
+compileC (EVar v) env
+  | v `elem` aDomain env = [Push vInd]
+  | otherwise = [PushGlobal v]
+  where
+    vInd = aLookup env v (error "Can't happen")
+compileC (ENum n) env = [PushInt n]
+compileC (EConstr tag 0) env = [Pack tag 0]
+compileC e@(EAp e1 e2) env
+  | withEnoughArgs spine = compileCS (reverse spine) env
+  | otherwise = compileC e2 env ++ compileC e1 (argOffset 1 env) ++ [MkAp]
+  where
+    spine = makeSpine e
+    withEnoughArgs (EConstr _ arity : es) = arity == length es
+    withEnoughArgs _ = False
+compileC (ELet isRec defs e) env
+  | isRec = compileLetRec compileC defs e env
+  | otherwise = compileLet compileC defs e env
+
+makeSpine :: CoreExpr -> [CoreExpr]
+makeSpine (EAp e1 e2) = makeSpine e1 ++ [e2]
+makeSpine e = [e]
+
+compileCS :: [CoreExpr] -> GmEnvironment -> [Instruction]
+compileCS [EConstr tag arity] env = [Pack tag arity]
+compileCS (e : es) env = compileC e env ++ compileCS es (argOffset 1 env)
+
+compileE (ENum n) env = [PushInt n]
+compileE (ELet isRec defs e) env
+  | isRec = compileLetRec compileE defs e env
+  | otherwise = compileLet compileE defs e env
+compileE (EAp (EAp (EVar name) e1) e2) env
+  | name `elem` aDomain builtInDyadic = compileE e2 env ++ compileE e1 (argOffset 1 env) ++ [dyadic]
+  where
+    dyadic = aLookup builtInDyadic name (error "Invalid dyadic operator")
+compileE (EAp (EVar "negate") e) env = compileE e env ++ [Neg]
+compileE (EAp (EAp (EAp (EVar "if") e1) e2) e3) env = compileE e1 env ++ [Cond (compileE e2 env) (compileE e3 env)]
+compileE (ECase e alters) env = compileE e env ++ [CaseJump (compileAlters compileE' alters env)]
+compileE e env = compileC e env ++ [Eval]
+#endif
+#endif
+#endif
+#endif
+#endif
 #endif
 #endif
 #endif
