@@ -1,0 +1,2 @@
+f = negate;
+main = f 5

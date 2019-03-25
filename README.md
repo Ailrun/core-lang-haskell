@@ -94,28 +94,38 @@ This repository is about an implementation of a simple functional language based
 <summary>Exercises in Chapter 3</summary>
 <p>
 
-| Name          | Files                            |
-|---------------|----------------------------------|
-| Exercise 3.1  | /exercises/exercise3-01.v        |
-| Exercise 3.2  | ~/exercises/exercise3-02.v~      |
-| Exercise 3.3  | /exercises/exercise3-03.md       |
-| Exercise 3.4  | /exercises/exercise3-04.md       |
-| Exercise 3.5  | _skipped_                        |
-| Exercise 3.6  | /src/Language/GMachine.hs        |
-| Exercise 3.7  | /src/Language/GMachine.hs        |
-| Exercise 3.8  | /src/Language/GMachine.hs        |
-| Exercise 3.9  | /src/Language/GMachine.hs        |
-| Exercise 3.10 | /src/Language/GMachine.hs        |
-| Exercise 3.11 | /exercises/exercise3-11.md       |
-| Exercise 3.12 | /src/Language/GMachine.hs        |
-| Exercise 3.13 | _skipped_                        |
-| Exercise 3.14 | /src/Language/GMachine.hs        |
-| Exercise 3.15 | /src/Language/GMachine.hs        |
-| Exercise 3.16 | /src/Language/GMachine.hs        |
-| Exercise 3.17 | /exercises/exercise3-17.core     |
-| Exercise 3.18 | _skipped_                        |
-| Exercise 3.19 | /exercises/exercise3-19.compiled |
-| Exercise 3.20 | /exercises/exercise3-20.md       |
+| Name          | Files                                                 |
+|---------------|-------------------------------------------------------|
+| Exercise 3.1  | /exercises/exercise3-01.v                             |
+| Exercise 3.2  | ~/exercises/exercise3-02.v~                           |
+| Exercise 3.3  | /exercises/exercise3-03.md                            |
+| Exercise 3.4  | /exercises/exercise3-04.md                            |
+| Exercise 3.5  | _skipped_                                             |
+| Exercise 3.6  | /src/Language/GMachine.hs                             |
+| Exercise 3.7  | /src/Language/GMachine.hs                             |
+| Exercise 3.8  | /src/Language/GMachine.hs                             |
+| Exercise 3.9  | /src/Language/GMachine.hs                             |
+| Exercise 3.10 | /src/Language/GMachine.hs                             |
+| Exercise 3.11 | /exercises/exercise3-11.md                            |
+| Exercise 3.12 | /src/Language/GMachine.hs                             |
+| Exercise 3.13 | _skipped_                                             |
+| Exercise 3.14 | /src/Language/GMachine.hs                             |
+| Exercise 3.15 | /src/Language/GMachine.hs                             |
+| Exercise 3.16 | /src/Language/GMachine.hs                             |
+| Exercise 3.17 | /exercises/exercise3-17.core                          |
+| Exercise 3.18 | _skipped_                                             |
+| Exercise 3.19 | /exercises/exercise3-19.compiled                      |
+| Exercise 3.20 | /exercises/exercise3-20.md                            |
+| Exercise 3.21 | /src/Language/GMachine.hs                             |
+| Exercise 3.22 | /src/Language/GMachine.hs                             |
+| Exercise 3.23 | /src/Language/GMachine.hs                             |
+| Exercise 3.24 | /exercises/exercise3-24.md                            |
+| Exercise 3.25 | /src/Language/GMachine.hs                             |
+| Exercise 3.26 | /exercises/exercise3-26.md                            |
+| Exercise 3.27 | /src/Language/GMachine.hs                             |
+| Exercise 3.28 | /src/Language/GMachine.hs                             |
+| Exercise 3.29 | /src/Language/GMachine.hs, /exercises/exercise3-29.md |
+| Exercise 3.30 | _skipped_                                             |
 
 </p>
 </details>
