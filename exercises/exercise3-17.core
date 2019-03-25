@@ -1,0 +1,6 @@
+main =
+  letrec
+    a = K b;
+    b = K1 a
+  in
+    a 3 (a 4 5)

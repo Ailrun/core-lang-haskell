@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 module Language.GMachine
   ( run
+  , showResults
   , eval
   , compile
   )
@@ -130,10 +131,12 @@ mkAp state = putHeap heap' (putStack (a : as) state)
     a1 : a2 : as = getStack state
 
 push :: Int -> GmState -> GmState
+#if __CLH_EXERCISE_3__ < 12
 push n state = putStack (a : as) state
   where
     as = getStack state
     a = getArg (hLookup (getHeap state) (as !! (n + 1)))
+#endif
 
 getArg :: Node -> Addr
 getArg (NAp a1 a2) = a2
@@ -193,6 +196,7 @@ type GmCompiler = CoreExpr -> GmEnvironment -> GmCode
 type GmEnvironment = Assoc Name Int
 
 compileC :: GmCompiler
+#if __CLH_EXERCISE_3__ < 16
 compileC (EVar v) env
   | v `elem` aDomain env = [Push vInd]
   | otherwise = [PushGlobal v]
@@ -200,6 +204,7 @@ compileC (EVar v) env
     vInd = aLookup env v (error "Can't happen")
 compileC (ENum n) env = [PushInt n]
 compileC (EAp e1 e2) env = compileC e2 env ++ compileC e1 (argOffset 1 env) ++ [MkAp]
+#endif
 
 argOffset :: Int -> GmEnvironment -> GmEnvironment
 argOffset n env = [ (v, m + n) | (v, m) <- env ]
@@ -293,6 +298,7 @@ pushInt n state
     (heap', a) = hAlloc (getHeap state) (NNum n)
 
 #if __CLH_EXERCISE_3__ >= 7
+#if __CLH_EXERCISE_3__ < 14
 data Instruction
   = Unwind
   | PushGlobal Name
@@ -310,6 +316,7 @@ showInstruction (PushInt n) = iStr "PushInt " `iAppend` iNum n
 showInstruction MkAp = iStr "MkAp"
 showInstruction (Update n) = iStr "Update " `iAppend` iNum n
 showInstruction (Pop n) = iStr "Pop " `iAppend` iNum n
+#endif
 
 #if __CLH_EXERCISE_3__ >= 8
 data Node
@@ -329,6 +336,7 @@ showNode state addr (NInd a)
   = iConcat [ iStr "Ind ", iStr (showAddr a) ]
 
 #if __CLH_EXERCISE_3__ >= 9
+#if __CLH_EXERCISE_3__ < 15
 dispatch (PushGlobal f) = pushGlobal f
 dispatch (PushInt n) = pushInt n
 dispatch MkAp = mkAp
@@ -336,6 +344,7 @@ dispatch (Push n) = push n
 dispatch (Update n) = update n
 dispatch (Pop n) = pop n
 dispatch Unwind = unwind
+#endif
 
 update :: Int -> GmState -> GmState
 update n state = putStack stack' (putHeap heap' state)
@@ -347,6 +356,7 @@ update n state = putStack stack' (putHeap heap' state)
 pop :: Int -> GmState -> GmState
 pop n state = putStack (drop n (getStack state)) state
 
+#if __CLH_EXERCISE_3__ < 12
 unwind state = newState (hLookup heap a)
   where
     stack@(a : as) = getStack state
@@ -357,11 +367,126 @@ unwind state = newState (hLookup heap a)
       | length as < n = error "Unwinding with too few arguments"
       | otherwise = putCode c state
     newState (NInd a') = putCode [Unwind] (putStack (a' : as) state)
+#endif
 
 #if __CLH_EXERCISE_3__ >= 10
 compileR e env = compileC e env ++ [Update d, Pop d, Unwind]
   where
     d = length env
+
+#if __CLH_EXERCISE_3__ >= 12
+push n state = putStack (a : as) state
+  where
+    as = getStack state
+    a = as !! n
+
+unwind state = newState (hLookup heap a)
+  where
+    stack@(a : as) = getStack state
+    heap = getHeap state
+    newState (NNum n) = state
+    newState (NAp a1 a2) = putCode [Unwind] (putStack (a1 : stack) state)
+    newState (NGlobal n c)
+      | length as < n = error "Unwinding with too few arguments"
+      | otherwise = putCode c (putStack (rearrange n heap stack) state)
+    newState (NInd a') = putCode [Unwind] (putStack (a' : as) state)
+
+rearrange :: Int -> GmHeap -> GmStack -> GmStack
+rearrange n heap as
+  = take n as' ++ drop n as
+  where
+    as' = map (getArg . hLookup heap) (tail as)
+
+#if __CLH_EXERCISE_3__ >= 14
+data Instruction
+  = Unwind
+  | PushGlobal Name
+  | PushInt Int
+  | Push Int
+  | MkAp
+  | Update Int
+  | Pop Int
+  | Alloc Int
+  | Slide Int
+  deriving (Show, Read, Eq)
+
+showInstruction Unwind = iStr "Unwind"
+showInstruction (PushGlobal f) = iStr "PushGlobal " `iAppend` iStr f
+showInstruction (Push n) = iStr "Push " `iAppend` iNum n
+showInstruction (PushInt n) = iStr "PushInt " `iAppend` iNum n
+showInstruction MkAp = iStr "MkAp"
+showInstruction (Update n) = iStr "Update " `iAppend` iNum n
+showInstruction (Pop n) = iStr "Pop " `iAppend` iNum n
+showInstruction (Alloc n) = iStr "Alloc " `iAppend` iNum n
+showInstruction (Slide n) = iStr "Slide " `iAppend` iNum n
+
+#if __CLH_EXERCISE_3__ >= 15
+allocNodes :: Int -> GmHeap -> (GmHeap, [Addr])
+allocNodes 0 heap = (heap, [])
+allocNodes n heap = (heap'', a : as)
+  where
+    (heap', as) = allocNodes (n - 1) heap
+    (heap'', a) = hAlloc heap' (NInd hNull)
+
+dispatch (PushGlobal f) = pushGlobal f
+dispatch (PushInt n) = pushInt n
+dispatch MkAp = mkAp
+dispatch (Push n) = push n
+dispatch (Update n) = update n
+dispatch (Pop n) = pop n
+dispatch (Alloc n) = alloc n
+dispatch (Slide n) = slide n
+dispatch Unwind = unwind
+
+alloc :: Int -> GmState -> GmState
+alloc n state = putHeap heap' (putStack stack' state)
+  where
+    stack' = as ++ (getStack state)
+    (heap', as) = allocNodes n (getHeap state)
+
+#if __CLH_EXERCISE_3__ >= 16
+compileC (EVar v) env
+  | v `elem` aDomain env = [Push vInd]
+  | otherwise = [PushGlobal v]
+  where
+    vInd = aLookup env v (error "Can't happen")
+compileC (ENum n) env = [PushInt n]
+compileC (EAp e1 e2) env = compileC e2 env ++ compileC e1 (argOffset 1 env) ++ [MkAp]
+compileC (ELet isRec defs e) env
+  | isRec = compileLetRec defs e env
+  | otherwise = compileLet defs e env
+
+compileLet :: [(Name, CoreExpr)] -> GmCompiler
+compileLet defs expr env
+  = compileLet' defs env ++ compileC expr env' ++ [Slide (length defs)]
+  where
+    env' = compileArgs defs env
+
+compileLet' :: [(Name, CoreExpr)] -> GmEnvironment -> GmCode
+compileLet' [] env = []
+compileLet' ((name, expr) : defs) env
+  = compileC expr env ++ compileLet' defs (argOffset 1 env)
+
+compileArgs :: [(Name, CoreExpr)] -> GmEnvironment -> GmEnvironment
+compileArgs defs env = zip (map fst defs) [n - 1, n - 2 .. 0] ++ argOffset n env
+  where
+    n = length defs
+
+compileLetRec :: [(Name, CoreExpr)] -> GmCompiler
+compileLetRec defs expr env
+  = [Alloc n] ++ compileLetRec' defs env' ++ compileC expr env' ++ [Slide n]
+  where
+    env' = compileArgs defs env
+    n = length defs
+
+compileLetRec' :: [(Name, CoreExpr)] -> GmEnvironment -> GmCode
+compileLetRec' [] env = []
+compileLetRec' ((name, expr) : defs) env
+  = compileC expr env ++ [Update (length defs)] ++ compileLetRec' defs env
+#endif
+#endif
+#endif
+#endif
 #endif
 #endif
 #endif
