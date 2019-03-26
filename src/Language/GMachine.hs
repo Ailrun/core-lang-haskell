@@ -1111,7 +1111,7 @@ compileC e@(EAp e1 e2) env
   | withEnoughArgs spine = compileCS (reverse spine) env
   | otherwise = compileC e2 env ++ compileC e1 (argOffset 1 env) ++ [MkAp]
   where
-    spine = makeSpine e
+    spine = getSpine e
     withEnoughArgs (EConstr _ arity : es) = arity == length es
     withEnoughArgs _ = False
 compileC (ELet isRec defs e) env
@@ -1119,9 +1119,9 @@ compileC (ELet isRec defs e) env
   | otherwise = compileLet compileC defs e env
 #endif
 
-makeSpine :: CoreExpr -> [CoreExpr]
-makeSpine (EAp e1 e2) = makeSpine e1 ++ [e2]
-makeSpine e = [e]
+getSpine :: CoreExpr -> [CoreExpr]
+getSpine (EAp e1 e2) = getSpine e1 ++ [e2]
+getSpine e = [e]
 
 compileCS :: [CoreExpr] -> GmEnvironment -> [Instruction]
 compileCS [EConstr tag arity] env = [Pack tag arity]
