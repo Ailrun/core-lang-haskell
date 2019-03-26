@@ -596,7 +596,12 @@ showInstruction Le = iStr "Le"
 showInstruction Gt = iStr "Gt"
 showInstruction Ge = iStr "Ge"
 showInstruction (Cond c1 c2)
-  = iConcat [ iStr "Cond ", showInstructions c1, iStr " ", showInstructions c2 ]
+  = iConcat [ iStr "Cond [ ", iIndent showCases, iStr " ]" ]
+  where
+    showCases
+      = iConcat [ iStr "True  -> [ ", showCase c1, iStr " ]", iNewline,
+                  iStr "False -> [ ", showCase c2, iStr " ]"]
+    showCase c = iIndent (iInterleave iNewline (map showInstruction c))
 #endif
 
 #if __CLH_EXERCISE_3__ < 31
@@ -609,7 +614,7 @@ showState state
 
 showDump :: GmState -> ISeq
 showDump state
-  = iConcat [ iStr "  Dump:   ["
+  = iConcat [ iStr "  Dump:   [ "
             , iIndent . iInterleave iNewline . map showDumpItem . reverse . getDump $ state
             , iStr " ]"
             ]
@@ -885,7 +890,7 @@ showNode state addr (NAp a1 a2)
 showNode state addr (NInd a)
   = iConcat [ iStr "Ind ", iStr (showAddr a) ]
 showNode state addr (NConstr t as)
-  = iConcat [ iStr "Cons ", iNum t, iStr " [", iInterleave (iStr ", ") (map (iStr . showAddr) as), iStr "]" ]
+  = iConcat [ iStr "Constr ", iNum t, iStr " [", iInterleave (iStr ", ") (map (iStr . showAddr) as), iStr "]" ]
 
 #if __CLH_EXERCISE_3__ >= 32
 data Instruction
@@ -931,20 +936,25 @@ showInstruction Le = iStr "Le"
 showInstruction Gt = iStr "Gt"
 showInstruction Ge = iStr "Ge"
 showInstruction (Cond c1 c2)
-  = iConcat [ iStr "Cond ", showInstructions c1, iStr " ", showInstructions c2 ]
+  = iConcat [ iStr "Cond [ ", iIndent showCases, iStr " ]" ]
+  where
+    showCases
+      = iConcat [ iStr "True  -> [ ", showCase c1, iStr " ]", iNewline,
+                  iStr "False -> [ ", showCase c2, iStr " ]"]
+    showCase c = iIndent (iInterleave iNewline (map showInstruction c))
 showInstruction (Pack tag arity)
-  = iConcat [ iStr "Pack ", iNum tag, iStr " ", iNum arity ]
+  = iConcat [ iStr "Pack{", iNum tag, iStr ",", iNum arity, iStr "}" ]
 showInstruction (CaseJump alters) = iStr "CaseJump " `iAppend` showAlters alters
 showInstruction (Split arity) = iStr "Split " `iAppend` iNum arity
 showInstruction Print = iStr "Print"
 
 showAlters :: Assoc Int GmCode -> ISeq
 showAlters alters
-  = iConcat [ iStr "[", iIndent (iInterleave iNewline (map showAlter alters)), iStr "]"]
+  = iConcat [ iStr "[ ", iIndent (iInterleave iNewline (map showAlter alters)), iStr " ]"]
 
 showAlter :: (Int, GmCode) -> ISeq
 showAlter (tag, code)
-  = iConcat [ iNum tag, iStr " -> [", showInstructions code, iStr "]" ]
+  = iConcat [ iNum tag, iStr " -> [ ", iIndent (iInterleave iNewline (map showInstruction code)), iStr " ]" ]
 
 #if __CLH_EXERCISE_3__ >= 33
 dispatch (PushGlobal f) = pushGlobal f
