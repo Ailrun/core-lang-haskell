@@ -1,5 +1,10 @@
 {-# LANGUAGE CPP #-}
-module Language.Parser where
+module Language.Parser
+  ( clex
+  , syntax
+  , parse
+  )
+where
 
 import Data.Char
 import Language.Types
