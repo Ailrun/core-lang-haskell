@@ -1255,6 +1255,7 @@ showVStack :: GmState -> ISeq
 showVStack state
   = iConcat [ iStr "  VStack: [ ", iInterleave (iStr ",") (map iNum (getVStack state)), iStr " ]" ]
 
+#if __CLH_EXERCISE_3__ < 46
 data Instruction
   = Unwind
   | PushGlobal Name
@@ -1342,6 +1343,7 @@ dispatch (Split arity) = split arity
 dispatch Unwind = unwind
 dispatch Eval = evalInstruction
 dispatch Print = printInstruction
+#endif
 
 pushBasic :: Int -> GmState -> GmState
 pushBasic n state = putVStack (n : getVStack state) state
@@ -1461,6 +1463,7 @@ compileE (EAp (EAp (EAp (EVar "if") e1) e2) e3) env
 compileE e env = compileC e env ++ [Eval]
 
 #if __CLH_EXERCISE_3__ >= 43
+#if __CLH_EXERCISE_3__ < 46
 compileR (ELet isRec defs e) env
   | isRec = compileLetRec compileR defs e env
   | otherwise = compileLet compileR defs e env
@@ -1471,6 +1474,7 @@ compileR (ECase e alters) env
 compileR e env = compileE e env ++ [Update d, Pop d, Unwind]
   where
     d = length env
+#endif
 
 compileR' :: Int -> GmCompiler
 compileR' offset expr env
@@ -1515,6 +1519,119 @@ unwind state = newState (hLookup heap a)
       case getDump state of
         (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
         _ -> state
+
+#if __CLH_EXERCISE_3__ >= 46
+data Instruction
+  = Unwind
+  | PushGlobal Name
+  | PushInt Int
+  | Push Int
+  | MkAp
+  | Update Int
+  | Pop Int
+  | Alloc Int
+  | Slide Int
+  | Eval
+  | Add | Sub | Mul | Div
+  | Neg
+  | Eq | Ne | Lt | Le | Gt | Ge
+  | Cond GmCode GmCode
+  | Pack Int Int
+  | CaseJump (Assoc Int GmCode)
+  | Split Int
+  | Print
+  | PushBasic Int
+  | MkBool
+  | MkInt
+  | Get
+  | Return
+  deriving (Show, Read, Eq)
+
+showInstruction Unwind = iStr "Unwind"
+showInstruction (PushGlobal f) = iStr "PushGlobal " `iAppend` iStr f
+showInstruction (Push n) = iStr "Push " `iAppend` iNum n
+showInstruction (PushInt n) = iStr "PushInt " `iAppend` iNum n
+showInstruction MkAp = iStr "MkAp"
+showInstruction (Update n) = iStr "Update " `iAppend` iNum n
+showInstruction (Pop n) = iStr "Pop " `iAppend` iNum n
+showInstruction (Alloc n) = iStr "Alloc " `iAppend` iNum n
+showInstruction (Slide n) = iStr "Slide " `iAppend` iNum n
+showInstruction Eval = iStr "Eval"
+showInstruction Add = iStr "Add"
+showInstruction Sub = iStr "Sub"
+showInstruction Mul = iStr "Mul"
+showInstruction Div = iStr "Div"
+showInstruction Neg = iStr "Neg"
+showInstruction Eq = iStr "Eq"
+showInstruction Ne = iStr "Ne"
+showInstruction Lt = iStr "Lt"
+showInstruction Le = iStr "Le"
+showInstruction Gt = iStr "Gt"
+showInstruction Ge = iStr "Ge"
+showInstruction (Cond c1 c2) = iStr "Cond " `iAppend` showAlters [(2, c1), (1, c2)]
+showInstruction (Pack tag arity)
+  = iConcat [ iStr "Pack{", iNum tag, iStr ",", iNum arity, iStr "}" ]
+showInstruction (CaseJump alters) = iStr "CaseJump " `iAppend` showAlters alters
+showInstruction (Split arity) = iStr "Split " `iAppend` iNum arity
+showInstruction (PushBasic n) = iStr "PushBasic " `iAppend` iNum n
+showInstruction MkBool = iStr "MkBool"
+showInstruction MkInt = iStr "MkInt"
+showInstruction Get = iStr "Get"
+showInstruction Print = iStr "Print"
+showInstruction Return = iStr "Return"
+
+dispatch (PushGlobal f) = pushGlobal f
+dispatch (PushInt n) = pushInt n
+dispatch (PushBasic n) = pushBasic n
+dispatch MkAp = mkAp
+dispatch MkBool = mkBool
+dispatch MkInt = mkInt
+dispatch Get = getInstruction
+dispatch (Push n) = push n
+dispatch (Update n) = update n
+dispatch (Pop n) = pop n
+dispatch (Alloc n) = alloc n
+dispatch (Slide n) = slide n
+dispatch Add = dyadicIntOp (+)
+dispatch Sub = dyadicIntOp (-)
+dispatch Mul = dyadicIntOp (*)
+dispatch Div = dyadicIntOp div
+dispatch Neg = neg
+dispatch Eq = dyadicBoolOp (==)
+dispatch Ne = dyadicBoolOp (/=)
+dispatch Lt = dyadicBoolOp (<)
+dispatch Le = dyadicBoolOp (<=)
+dispatch Gt = dyadicBoolOp (>)
+dispatch Ge = dyadicBoolOp (>=)
+dispatch (Cond c1 c2) = cond c1 c2
+dispatch (Pack tag arity) = pack tag arity
+dispatch (CaseJump alters) = caseJump alters
+dispatch (Split arity) = split arity
+dispatch Unwind = unwind
+dispatch Eval = evalInstruction
+dispatch Print = printInstruction
+dispatch Return = returnInstruction
+
+returnInstruction :: GmState -> GmState
+returnInstruction state
+  = putStack stack' (putDump dump' (putVStack vStack' (putCode code' state)))
+  where
+    stack' = last (getStack state) : as
+    (code', as, vStack') : dump' = getDump state
+
+compileR (ELet isRec defs e) env
+  | isRec = compileLetRec compileR defs e env
+  | otherwise = compileLet compileR defs e env
+compileR (EAp (EAp (EAp (EVar "if") e1) e2) e3) env
+  = compileB e1 env ++ [Cond (compileR e2 env) (compileR e3 env)]
+compileR (ECase e alters) env
+  = compileE e env ++ [CaseJump (compileAlters compileR' alters env)]
+compileR e@(ENum _) env = compileE e env ++ [Update (length env), Return]
+compileR e@(EConstr _ _) env = compileE e env ++ [Update (length env), Return]
+compileR e env = compileE e env ++ [Update d, Pop d, Unwind]
+  where
+    d = length env
+#endif
 #endif
 #endif
 #endif
