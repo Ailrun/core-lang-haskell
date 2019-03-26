@@ -12,6 +12,7 @@ import Data.ISeq
 import Language.Parser
 import Language.Prelude
 import Language.Types
+import Text.ParserCombinators.ReadP
 import Util
 
 run :: String -> String
@@ -125,9 +126,11 @@ dispatch = undefined
 #endif
 
 pushGlobal :: Name -> GmState -> GmState
+#if __CLH_EXERCISE_3__ < 38
 pushGlobal name state = putStack (a : getStack state) state
   where
     a = aLookup (getGlobals state) name (error ("Undeclared global " ++ name))
+#endif
 
 pushInt :: Int -> GmState -> GmState
 #if __CLH_EXERCISE_3__ < 6
@@ -714,12 +717,14 @@ evalInstruction state = putCode [Unwind] (putStack [a] (putDump dump' state))
 
 #if __CLH_EXERCISE_3__ >= 25
 boxBoolean :: Bool -> GmState -> GmState
+#if __CLH_EXERCISE_3__ < 37
 boxBoolean b state
   = putStack (a : getStack state) (putHeap heap' state)
   where
     (heap', a) = hAlloc (getHeap state) (NNum b')
     b' | b = 1
        | otherwise = 0
+#endif
 
 comparison :: (Int -> Int -> Bool) -> GmState -> GmState
 comparison = primitive2 boxBoolean unboxInteger
@@ -774,6 +779,7 @@ compile = undefined
 initialCode = [PushGlobal "main", Eval]
 #endif
 
+#if __CLH_EXERCISE_3__ < 37
 compiledPrimitives
   = [ ("+", 2, [Push 1, Eval, Push 1, Eval, Add, Update 2, Pop 2, Unwind])
     , ("-", 2, [Push 1, Eval, Push 1, Eval, Sub, Update 2, Pop 2, Unwind])
@@ -788,6 +794,7 @@ compiledPrimitives
     , (">=", 2, [Push 1, Eval, Push 1, Eval, Ge, Update 2, Pop 2, Unwind])
     , ("if", 3, [Push 0, Eval, Cond [Push 1] [Push 2], Update 3, Pop 3, Unwind])
     ]
+#endif
 
 #if __CLH_EXERCISE_3__ >= 28
 compileR e env = compileE e env ++ [Update d, Pop d, Unwind]
@@ -836,12 +843,15 @@ unwind state = newState (hLookup heap a)
 #endif
 
 #if __CLH_EXERCISE_3__ >= 31
+#if __CLH_EXERCISE_3__ < 39
 type GmState = (GmOutput, GmCode, GmStack, GmDump, GmHeap, GmGlobals, GmStats)
+#endif
 
 type GmOutput = String
 
 getOutput :: GmState -> GmOutput
 putOutput :: GmOutput -> GmState -> GmState
+#if __CLH_EXERCISE_3__ < 39
 getOutput (output, _, _, _, _, _, _) = output
 putOutput output (_, code, stack, dump, heap, globals, stats) = (output, code, stack, dump, heap, globals, stats)
 
@@ -862,6 +872,7 @@ putGlobals globals (output, code, stack, dump, heap, _, stats) = (output, code, 
 
 getStats (_, _, _, _, _, _, stats) = stats
 putStats stats (output, code, stack, dump, heap, globals, _) = (output, code, stack, dump, heap, globals, stats)
+#endif
 
 data Node
   = NNum Int
@@ -1060,6 +1071,7 @@ compile program
 initialCode = [PushGlobal "main", Eval, Print]
 
 #if __CLH_EXERCISE_3__ >= 35
+#if __CLH_EXERCISE_3__ < 38
 compileC (EVar v) env
   | v `elem` aDomain env = [Push vInd]
   | otherwise = [PushGlobal v]
@@ -1077,6 +1089,7 @@ compileC e@(EAp e1 e2) env
 compileC (ELet isRec defs e) env
   | isRec = compileLetRec compileC defs e env
   | otherwise = compileLet compileC defs e env
+#endif
 
 makeSpine :: CoreExpr -> [CoreExpr]
 makeSpine (EAp e1 e2) = makeSpine e1 ++ [e2]
@@ -1086,6 +1099,7 @@ compileCS :: [CoreExpr] -> GmEnvironment -> [Instruction]
 compileCS [EConstr tag arity] env = [Pack tag arity]
 compileCS (e : es) env = compileC e env ++ compileCS es (argOffset 1 env)
 
+#if __CLH_EXERCISE_3__ < 37
 compileE (ENum n) env = [PushInt n]
 compileE (ELet isRec defs e) env
   | isRec = compileLetRec compileE defs e env
@@ -1098,6 +1112,114 @@ compileE (EAp (EVar "negate") e) env = compileE e env ++ [Neg]
 compileE (EAp (EAp (EAp (EVar "if") e1) e2) e3) env = compileE e1 env ++ [Cond (compileE e2 env) (compileE e3 env)]
 compileE (ECase e alters) env = compileE e env ++ [CaseJump (compileAlters compileE' alters env)]
 compileE e env = compileC e env ++ [Eval]
+#endif
+
+#if __CLH_EXERCISE_3__ >= 37
+compileE (ENum n) env = [PushInt n]
+compileE (ELet isRec defs e) env
+  | isRec = compileLetRec compileE defs e env
+  | otherwise = compileLet compileE defs e env
+compileE (EAp (EAp (EVar name) e1) e2) env
+  | name `elem` aDomain builtInDyadic = compileE e2 env ++ compileE e1 (argOffset 1 env) ++ [dyadic]
+  where
+    dyadic = aLookup builtInDyadic name (error "Invalid dyadic operator")
+compileE (EAp (EVar "negate") e) env = compileE e env ++ [Neg]
+compileE (ECase e alters) env = compileE e env ++ [CaseJump (compileAlters compileE' alters env)]
+compileE e env = compileC e env ++ [Eval]
+
+compiledPrimitives
+  = [ ("+", 2, [Push 1, Eval, Push 1, Eval, Add, Update 2, Pop 2, Unwind])
+    , ("-", 2, [Push 1, Eval, Push 1, Eval, Sub, Update 2, Pop 2, Unwind])
+    , ("*", 2, [Push 1, Eval, Push 1, Eval, Mul, Update 2, Pop 2, Unwind])
+    , ("/", 2, [Push 1, Eval, Push 1, Eval, Div, Update 2, Pop 2, Unwind])
+    , ("negate", 1, [Push 0, Eval, Neg, Update 1, Pop 1, Unwind])
+    , ("==", 2, [Push 1, Eval, Push 1, Eval, Eq, Update 2, Pop 2, Unwind])
+    , ("~=", 2, [Push 1, Eval, Push 1, Eval, Ne, Update 2, Pop 2, Unwind])
+    , ("<", 2, [Push 1, Eval, Push 1, Eval, Lt, Update 2, Pop 2, Unwind])
+    , ("<=", 2, [Push 1, Eval, Push 1, Eval, Le, Update 2, Pop 2, Unwind])
+    , (">", 2, [Push 1, Eval, Push 1, Eval, Gt, Update 2, Pop 2, Unwind])
+    , (">=", 2, [Push 1, Eval, Push 1, Eval, Ge, Update 2, Pop 2, Unwind])
+    , ("if", 3, [Push 0, Eval, CaseJump [(1, [Split 0, Push 2, Eval, Slide 0]), (2, [Split 0, Push 1, Eval, Slide 0])], Update 3, Pop 3, Unwind])
+    ]
+
+boxBoolean b state
+  = putStack (a : getStack state) (putHeap heap' state)
+  where
+    (heap', a) = hAlloc (getHeap state) (NConstr tag [])
+    tag
+      | b = 2
+      | otherwise = 1
+
+#if __CLH_EXERCISE_3__ >= 38
+pushGlobal name state
+  | shouldBeAdded = putHeap heap' (putGlobals globals' (putStack stack' state))
+  where
+    stack' = a : getStack state
+    globals' = (name, a) : getGlobals state
+    (heap', a) = hAlloc (getHeap state) (NGlobal arity [Pack tag arity, Update 0, Unwind])
+    ((tag, arity), _) : _ = parsedPack
+
+    shouldBeAdded = not (null parsedPack || globalExists)
+
+    globalExists = name `elem` aDomain (getGlobals state)
+    parsedPack = readP_to_S parsePack name
+    parsePack = do
+      _ <- string "Pack{"
+      tag <- readS_to_P (reads :: ReadS Int)
+      _ <- string ","
+      arity <- readS_to_P (reads :: ReadS Int)
+      _ <- string "}"
+      eof
+      return (tag, arity)
+pushGlobal name state = putStack (a : getStack state) state
+  where
+    a = aLookup (getGlobals state) name (error ("Undeclared global " ++ name))
+
+compileC (EVar v) env
+  | v `elem` aDomain env = [Push vInd]
+  | otherwise = [PushGlobal v]
+  where
+    vInd = aLookup env v (error "Can't happen")
+compileC (ENum n) env = [PushInt n]
+compileC (EConstr tag arity) env = [PushGlobal ("Pack{" ++ show tag ++ "," ++ show arity ++ "}")]
+compileC (EAp e1 e2) env = compileC e2 env ++ compileC e1 (argOffset 1 env) ++ [MkAp]
+compileC (ELet isRec defs e) env
+  | isRec = compileLetRec compileC defs e env
+  | otherwise = compileLet compileC defs e env
+
+#if __CLH_EXERCISE_3__ >= 39
+type GmState = (GmOutput, GmCode, GmStack, GmDump, GmVStack, GmHeap, GmGlobals, GmStats)
+
+type GmVStack = [Int]
+
+getVStack :: GmState -> GmVStack
+putVStack :: GmVStack -> GmState -> GmState
+getVStack (_, _, _, _, vStack, _, _, _) = vStack
+putVStack vStack (output, code, stack, dump, _, heap, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
+
+getOutput (output, _, _, _, _, _, _, _) = output
+putOutput output (_, code, stack, dump, vStack, heap, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
+
+getDump (_, _, _, dump, _, _, _, _) = dump
+putDump dump (output, code, stack, _, vStack, heap, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
+
+getCode (_, code, _, _, _, _, _, _) = code
+putCode code (output, _, stack, dump, vStack, heap, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
+
+getStack (_, _, stack, _, _, _, _, _) = stack
+putStack stack (output, code, _, dump, vStack, heap, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
+
+getHeap (_, _, _, _, _, heap, _, _) = heap
+putHeap heap (output, code, stack, dump, vStack, _, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
+
+getGlobals (_, _, _, _, _, _, globals, _) = globals
+putGlobals globals (output, code, stack, dump, vStack, heap, _, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
+
+getStats (_, _, _, _, _, _, _, stats) = stats
+putStats stats (output, code, stack, dump, vStack, heap, globals, _) = (output, code, stack, dump, vStack, heap, globals, stats)
+#endif
+#endif
+#endif
 #endif
 #endif
 #endif
