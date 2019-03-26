@@ -963,13 +963,7 @@ showInstruction Lt = iStr "Lt"
 showInstruction Le = iStr "Le"
 showInstruction Gt = iStr "Gt"
 showInstruction Ge = iStr "Ge"
-showInstruction (Cond c1 c2)
-  = iConcat [ iStr "Cond [ ", iIndent showCases, iStr " ]" ]
-  where
-    showCases
-      = iConcat [ iStr "True  -> [ ", showCase c1, iStr " ]", iNewline,
-                  iStr "False -> [ ", showCase c2, iStr " ]"]
-    showCase c = iIndent (iInterleave iNewline (map showInstruction c))
+showInstruction (Cond c1 c2) = iStr "Cond " `iAppend` showAlters [(2, c1), (1, c2)]
 showInstruction (Pack tag arity)
   = iConcat [ iStr "Pack{", iNum tag, iStr ",", iNum arity, iStr "}" ]
 showInstruction (CaseJump alters) = iStr "CaseJump " `iAppend` showAlters alters
@@ -1307,13 +1301,7 @@ showInstruction Lt = iStr "Lt"
 showInstruction Le = iStr "Le"
 showInstruction Gt = iStr "Gt"
 showInstruction Ge = iStr "Ge"
-showInstruction (Cond c1 c2)
-  = iConcat [ iStr "Cond [ ", iIndent showCases, iStr " ]" ]
-  where
-    showCases
-      = iConcat [ iStr "True  -> [ ", showCase c1, iStr " ]", iNewline,
-                  iStr "False -> [ ", showCase c2, iStr " ]"]
-    showCase c = iIndent (iInterleave iNewline (map showInstruction c))
+showInstruction (Cond c1 c2) = iStr "Cond " `iAppend` showAlters [(2, c1), (1, c2)]
 showInstruction (Pack tag arity)
   = iConcat [ iStr "Pack{", iNum tag, iStr ",", iNum arity, iStr "}" ]
 showInstruction (CaseJump alters) = iStr "CaseJump " `iAppend` showAlters alters
