@@ -8,7 +8,9 @@ module Language.TIM
   )
 where
 
+import Control.Arrow
 import Data.ISeq
+import Data.List
 import Language.Parser
 import Language.Prelude
 import Language.Types
@@ -152,7 +154,9 @@ compileSc env (name, args, body)
     env' = zip args (map Arg [1..]) ++ env
 #endif
 
+#if __CLH_EXERCISE_4__ < 11
 compileR :: CoreExpr -> TimCompilerEnv -> [Instruction]
+#endif
 #if __CLH_EXERCISE_4__ < 6
 compileR (EAp e1 e2) env = Push (compileA e2 env) : compileR e1 env
 compileR e@(EVar _) env = [Enter (compileA e env)]
@@ -160,10 +164,12 @@ compileR e@(ENum _) env = [Enter (compileA e env)]
 compileR e env = error "compileR: can't do this yet"
 #endif
 
+#if __CLH_EXERCISE_4__ < 11
 compileA :: CoreExpr -> TimCompilerEnv -> TimAddrMode
 compileA (EVar v) env = aLookup env v (error ("Unknown variable " ++ v))
 compileA (ENum n) env = IntConst n
 compileA e env = Code (compileR e env)
+#endif
 
 eval state = state : restState
   where
@@ -383,6 +389,7 @@ showStats (_, _, _, _, _, heap, _, stats)
             ]
 
 #if __CLH_EXERCISE_4__ >= 3
+#if __CLH_EXERCISE_4__ < 11
 compileSc env (name, args, body)
   = case args of
       [] -> (name, instructions)
@@ -390,12 +397,14 @@ compileSc env (name, args, body)
   where
     instructions = compileR body env'
     env' = zip args (map Arg [1..]) ++ env
+#endif
 
 #if __CLH_EXERCISE_4__ >= 4
 type TimValueStack = [Int]
 
 initialValueStack = []
 
+#if __CLH_EXERCISE_4__ < 11
 data Instruction
   = Take Int
   | Enter TimAddrMode
@@ -404,6 +413,7 @@ data Instruction
   | Return
   | Op Op
   | Cond [Instruction] [Instruction]
+#endif
 
 data Op
   = Add | Sub | Mul | Div
@@ -415,6 +425,7 @@ data ValueAMode
   = FramePtr
   | IntVConst Int
 
+#if __CLH_EXERCISE_4__ < 11
 showInstruction _ (Take n) = iStr "Take " `iAppend` iNum n
 showInstruction d (Enter x) = iStr "Enter " `iAppend` showArg d x
 showInstruction d (Push x) = iStr "Push " `iAppend` showArg d x
@@ -597,6 +608,7 @@ binaryNameToOp
     ]
 #endif
 
+#if __CLH_EXERCISE_4__ < 11
 compileB :: CoreExpr -> TimCompilerEnv -> [Instruction] -> [Instruction]
 compileB e env cont
   | isArithmeticExpr e
@@ -612,7 +624,9 @@ compileB e env cont
     getOp name = aLookup binaryNameToOp name (error (name ++ " is not a binary operator"))
 compileB (ENum n) env cont = PushV (IntVConst n) : cont
 compileB e env cont = Push (Code cont) : compileR e env
+#endif
 
+#if __CLH_EXERCISE_4__ < 11
 step (Take n : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
   | length stack >= n = (inst, fPtr', drop n stack, vStack, dump, heap', cStore, statSpendTime (n + 1) stats)
   | otherwise = error "Too few args for Take instruction"
@@ -654,8 +668,10 @@ step ([Cond inst1 inst2], fPtr, stack, vStack, dump, heap, cStore, stats)
       0 : vStack' -> (inst1, fPtr, stack, vStack', dump, heap, cStore, statSpendTime 1 stats)
       _ : vStack' -> (inst2, fPtr, stack, vStack', dump, heap, cStore, statSpendTime 1 stats)
       _ -> error "Invalid vStack for Cond"
+#endif
 
 #if __CLH_EXERCISE_4__ >= 7
+#if __CLH_EXERCISE_4__ < 11
 compileR e@(EAp _ _) env
   | isArithmeticExpr e = compileB e env [Return]
 compileR e@(ENum _) env = compileB e env [Return]
@@ -664,6 +680,7 @@ compileR (EAp (EAp (EAp (EVar "if") e1) e2) e3) env
 compileR (EAp e1 e2) env = Push (compileA e2 env) : compileR e1 env
 compileR e@(EVar _) env = [Enter (compileA e env)]
 compileR e env = error "compileR: can't do this yet"
+#endif
 
 #if __CLH_EXERCISE_4__ >= 8
 binaryOpToFun
@@ -685,6 +702,7 @@ boolBinaryFunToIntBinaryFun f n1 n2
     then 0
     else 1
 
+#if __CLH_EXERCISE_4__ < 11
 compiledPrimitives
   = [ ("+", [ Take 2, Push (Code [ Push (Code [ Op Add, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
     , ("-", [ Take 2, Push (Code [ Push (Code [ Op Sub, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
@@ -702,11 +720,248 @@ compiledPrimitives
     , ("==", [ Take 2, Push (Code [ Push (Code [ Op Eq, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
     , ("~=", [ Take 2, Push (Code [ Push (Code [ Op Ne, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
     ]
+#endif
 
 binaryNameToOp
   = [ ("+", Add), ("-", Sub), ("*", Mul), ("/", Div)
     , (">", Gt), (">=", Ge), ("<", Lt), ("<=", Le), ("==", Eq), ("~=", Ne)
     ]
+
+#if __CLH_EXERCISE_4__ >= 11
+data Instruction
+  = Take Int Int
+  | Enter TimAddrMode
+  | Push TimAddrMode
+  | PushV ValueAMode
+  | Return
+  | Op Op
+  | Cond [Instruction] [Instruction]
+  | Move Int TimAddrMode
+
+showInstruction _ (Take t n)
+  = iConcat [ iStr "Take ", iNum t, iStr " ", iNum n ]
+showInstruction d (Enter x) = iStr "Enter " `iAppend` showArg d x
+showInstruction d (Push x) = iStr "Push " `iAppend` showArg d x
+showInstruction _ (PushV FramePtr) = iStr "PushV FramePtr"
+showInstruction _ (PushV (IntVConst n)) = iStr "PushV " `iAppend` iNum n
+showInstruction _ Return = iStr "Return"
+showInstruction _ (Op op) = iStr "Op " `iAppend` showOp op
+showInstruction None (Cond c1 c2)
+  = iConcat [ iStr "Cond ", showInstructions None c1, iStr " ", showInstructions None c2 ]
+showInstruction d (Cond c1 c2)
+  = iConcat [ iStr "Cond "
+            , iIndent (iConcat [showInstructions d c1, iNewline, showInstructions d c2])
+            ]
+showInstruction d (Move i x)
+  = iConcat [ iStr "Move ", iNum i, showArg d x ]
+
+step (Take t n : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  | length stack >= n = (inst, fPtr', drop n stack, vStack, dump, heap', cStore, statSpendTime (t + 1) stats)
+  | otherwise = error "Too few args for Take instruction"
+  where
+    (heap', fPtr') = fAlloc heap closures
+    closures = take n stack ++ replicate (t - n) ([], FrameNull)
+step ([Enter am], fPtr, stack, vStack, dump, heap, cStore, stats)
+  = (inst', fPtr', stack, vStack, dump, heap, cStore, statSpendTime 1 stats)
+  where
+    (inst', fPtr') = amToClosure am fPtr heap cStore
+step (Push am : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  = (inst, fPtr, stack', vStack, dump, heap, cStore, (statUpdateMaxStackDepth stack' . statSpendTime 1) stats)
+  where
+    stack' = amToClosure am fPtr heap cStore : stack
+step (PushV vMode : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  = case vMode of
+      FramePtr ->
+        case fPtr of
+          FrameInt n -> (inst, fPtr, stack, n : vStack, dump, heap, cStore, statSpendTime 1 stats)
+          _ -> error "Invalid frame pointer for PushV FramePtr"
+      IntVConst n -> (inst, fPtr, stack, n : vStack, dump, heap, cStore, statSpendTime 1 stats)
+step ([Return], fPtr, stack, vStack, dump, heap, cStore, stats)
+  = case stack of
+      (inst', fPtr') : stack' -> (inst', fPtr', stack', vStack, dump, heap, cStore, statSpendTime 1 stats)
+      _ -> error "Invalid stack to Return"
+step (Op op : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  | op `elem` aDomain binaryOpToFun
+  = case vStack of
+      n1 : n2 : ns -> (inst, fPtr, stack, binF n1 n2 : ns, dump, heap, cStore, (statSpendTime 1) stats)
+      _ -> error ("Not enough values for the operation " ++ iDisplay (showOp op))
+  | op `elem` aDomain unaryOpToFun
+  = case vStack of
+      n : ns -> (inst, fPtr, stack, unF n : ns, dump, heap, cStore, (statSpendTime 1) stats)
+      _ -> error ("Not enough values for the operation " ++ iDisplay (showOp op))
+  where
+    unF = aLookup unaryOpToFun op (error (iDisplay (showOp op) ++ " is not a unary operator"))
+    binF = aLookup binaryOpToFun op (error (iDisplay (showOp op) ++ " is not a binary operator"))
+step ([Cond inst1 inst2], fPtr, stack, vStack, dump, heap, cStore, stats)
+  = case vStack of
+      0 : vStack' -> (inst1, fPtr, stack, vStack', dump, heap, cStore, statSpendTime 1 stats)
+      _ : vStack' -> (inst2, fPtr, stack, vStack', dump, heap, cStore, statSpendTime 1 stats)
+      _ -> error "Invalid vStack for Cond"
+step (Move i am : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  = (inst, fPtr, stack, vStack, dump, heap', cStore, statSpendTime 1 stats)
+  where
+    heap' = fUpdate heap fPtr i (amToClosure am fPtr heap cStore)
+
+compiledPrimitives
+  = [ ("+", [ Take 2 2, Push (Code [ Push (Code [ Op Add, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
+    , ("-", [ Take 2 2, Push (Code [ Push (Code [ Op Sub, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
+    , ("*", [ Take 2 2, Push (Code [ Push (Code [ Op Mul, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
+    , ("/", [ Take 2 2, Push (Code [ Push (Code [ Op Div, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
+
+    , ("negate", [ Take 1 1, Push (Code [ Op Neg, Return ]), Enter (Arg 1) ])
+
+    , ("if", [ Take 3 3, Push (Code [ Cond [Enter (Arg 2)] [Enter (Arg 3)] ]), Enter (Arg 1) ])
+
+    , (">", [ Take 2 2, Push (Code [ Push (Code [ Op Gt, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
+    , (">=", [ Take 2 2, Push (Code [ Push (Code [ Op Ge, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
+    , ("<", [ Take 2 2, Push (Code [ Push (Code [ Op Lt, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
+    , ("<=", [ Take 2 2, Push (Code [ Push (Code [ Op Le, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
+    , ("==", [ Take 2 2, Push (Code [ Push (Code [ Op Eq, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
+    , ("~=", [ Take 2 2, Push (Code [ Push (Code [ Op Ne, Return ]), Enter (Arg 1) ]), Enter (Arg 2) ])
+    ]
+
+compileSc env (name, args, body)
+  = case args of
+      [] -> (name, instructions)
+      _ -> (name, Take d argsLength : instructions)
+  where
+    (d, instructions) = compileR body env' argsLength
+    env' = zip args (map Arg [1..]) ++ env
+    argsLength = length args
+
+compileR :: CoreExpr -> TimCompilerEnv -> Int -> (Int, [Instruction])
+#if __CLH_EXERCISE_4__ < 13
+compileR e@(EAp _ _) env d
+  | isArithmeticExpr e = compileB e env d [Return]
+compileR e@(ENum _) env d = compileB e env d [Return]
+compileR (ELet isRec defs eBody) env d
+  | not isRec = (d', moveDefs ++ inst)
+  | otherwise = error "Not implemented yet"
+  where
+    (d', inst) = compileR eBody env' dn
+    env' = map (fst *** Arg) defWithSlots ++ env
+    (dn, moveDefs) = mapAccumL makeMoveFromDef lastSlotForDefs defWithSlots
+
+    makeMoveFromDef dDef ((_, eDef), slot)
+      = second (Move slot) (compileA eDef env dDef)
+
+    defWithSlots = zip defs [d + 1..lastSlotForDefs]
+    lastSlotForDefs = d + length defs
+compileR (EAp (EAp (EAp (EVar "if") e1) e2) e3) env d
+  = compileB e1 env d3 [Cond inst2 inst3]
+  where
+    (d2, inst2) = compileR e2 env d
+    (d3, inst3) = compileR e3 env d2
+compileR (EAp e1 e2) env d = (d2, Push am : inst)
+  where
+    (d1, am) = compileA e2 env d
+    (d2, inst) = compileR e1 env d1
+compileR e@(EVar _) env d = (d', [Enter am])
+  where
+    (d', am) = compileA e env d
+compileR e env d = error "compileR: can't do this yet"
+#endif
+
+compileA :: CoreExpr -> TimCompilerEnv -> Int -> (Int, TimAddrMode)
+compileA (EVar v) env d = (d, aLookup env v (error ("Unknown variable " ++ v)))
+compileA (ENum n) env d = (d, IntConst n)
+compileA e env d = (d', Code inst)
+  where
+    (d', inst) = compileR e env d
+
+compileB :: CoreExpr -> TimCompilerEnv -> Int -> [Instruction] -> (Int, [Instruction])
+compileB e env d cont
+  | isArithmeticExpr e
+  = case e of
+      EAp (EVar name) e ->
+        compileB e env d (Op Neg : cont)
+      EAp (EAp (EVar name) e1) e2 ->
+        let
+          (d', cont') = compileB e1 env d (Op (getOp name) : cont)
+        in
+          compileB e2 env d' cont'
+  where
+    getOp name = aLookup binaryNameToOp name (error (name ++ " is not a binary operator"))
+compileB (ENum n) env d cont = (d, PushV (IntVConst n) : cont)
+compileB e env d cont = (d', Push (Code cont) : inst)
+  where
+    (d', inst) = compileR e env d
+
+#if __CLH_EXERCISE_4__ >= 13
+#if __CLH_EXERCISE_4__ < 14
+compileR e@(EAp _ _) env d
+  | isArithmeticExpr e = compileB e env d [Return]
+compileR e@(ENum _) env d = compileB e env d [Return]
+compileR (ELet isRec defs eBody) env d
+  = (d', moveDefs ++ inst)
+  where
+    (d', inst) = compileR eBody env' dn
+    env' = map (fst *** Arg) defWithSlots ++ env
+    (dn, moveDefs) = mapAccumL makeMoveFromDef lastSlotForDefs defWithSlots
+
+    makeMoveFromDef dDef ((_, eDef), slot)
+      = second (Move slot) (compileA eDef defEnv dDef)
+
+    defEnv
+      | isRec = env'
+      | otherwise = env
+
+    defWithSlots = zip defs [d + 1..lastSlotForDefs]
+    lastSlotForDefs = d + length defs
+compileR (EAp (EAp (EAp (EVar "if") e1) e2) e3) env d
+  = compileB e1 env d3 [Cond inst2 inst3]
+  where
+    (d2, inst2) = compileR e2 env d
+    (d3, inst3) = compileR e3 env d2
+compileR (EAp e1 e2) env d = (d2, Push am : inst)
+  where
+    (d1, am) = compileA e2 env d
+    (d2, inst) = compileR e1 env d1
+compileR e@(EVar _) env d = (d', [Enter am])
+  where
+    (d', am) = compileA e env d
+compileR e env d = error "compileR: can't do this yet"
+#endif
+
+#if __CLH_EXERCISE_4__ >= 14
+compileR e@(EAp _ _) env d
+  | isArithmeticExpr e = compileB e env d [Return]
+compileR e@(ENum _) env d = compileB e env d [Return]
+compileR (ELet isRec defs eBody) env d
+  = (d', moveDefs ++ inst)
+  where
+    (d', inst) = compileR eBody env' dn
+    env' = map (fst *** mkIndMode) defWithSlots ++ env
+    (dn, moveDefs) = mapAccumL makeMoveFromDef lastSlotForDefs defWithSlots
+
+    makeMoveFromDef dDef ((_, eDef), slot)
+      = second (Move slot) (compileA eDef defEnv dDef)
+
+    defEnv
+      | isRec = env'
+      | otherwise = env
+
+    defWithSlots = zip defs [d + 1..lastSlotForDefs]
+    lastSlotForDefs = d + length defs
+compileR (EAp (EAp (EAp (EVar "if") e1) e2) e3) env d
+  = compileB e1 env d3 [Cond inst2 inst3]
+  where
+    (d2, inst2) = compileR e2 env d
+    (d3, inst3) = compileR e3 env d2
+compileR (EAp e1 e2) env d = (d2, Push am : inst)
+  where
+    (d1, am) = compileA e2 env d
+    (d2, inst) = compileR e1 env d1
+compileR e@(EVar _) env d = (d', [Enter am])
+  where
+    (d', am) = compileA e env d
+compileR e env d = error "compileR: can't do this yet"
+
+mkIndMode :: Int -> TimAddrMode
+mkIndMode = Code . return . Enter . Arg
+#endif
+#endif
+#endif
 #endif
 #endif
 #endif
