@@ -153,17 +153,18 @@ This repository is about an implementation of a simple functional language based
 <summary>Exercises in Chapter 4</summary>
 <p>
 
-| Name         | Files                      |
-|--------------|----------------------------|
-| Exercise 4.1 | /src/Language/TIM.hs       |
-| Exercise 4.2 | /src/Language/TIM.hs       |
-| Exercise 4.3 | /src/Language/TIM.hs       |
-| Exercise 4.4 | /src/Language/TIM.hs       |
-| Exercise 4.5 | /src/Language/TIM.hs       |
-| Exercise 4.6 | /src/Language/TIM.hs       |
-| Exercise 4.7 | /src/Language/TIM.hs       |
-| Exercise 4.8 | /src/Language/TIM.hs       |
-| Exercise 4.9 | /exercises/exercise4-09.md |
+| Name          | Files                      |
+|---------------|----------------------------|
+| Exercise 4.1  | /src/Language/TIM.hs       |
+| Exercise 4.2  | /src/Language/TIM.hs       |
+| Exercise 4.3  | /src/Language/TIM.hs       |
+| Exercise 4.4  | /src/Language/TIM.hs       |
+| Exercise 4.5  | /src/Language/TIM.hs       |
+| Exercise 4.6  | /src/Language/TIM.hs       |
+| Exercise 4.7  | /src/Language/TIM.hs       |
+| Exercise 4.8  | /src/Language/TIM.hs       |
+| Exercise 4.9  | /exercises/exercise4-09.md |
+| Exercise 4.10 | /exercises/exercise4-10.md |
 
 </p>
 </details>
