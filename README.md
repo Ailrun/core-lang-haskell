@@ -147,6 +147,27 @@ This repository is about an implementation of a simple functional language based
 </p>
 </details>
 
+### Chapter 4
+
+<details>
+<summary>Exercises in Chapter 4</summary>
+<p>
+
+| Name         | Files                      |
+|--------------|----------------------------|
+| Exercise 4.1 | /src/Language/TIM.hs       |
+| Exercise 4.2 | /src/Language/TIM.hs       |
+| Exercise 4.3 | /src/Language/TIM.hs       |
+| Exercise 4.4 | /src/Language/TIM.hs       |
+| Exercise 4.5 | /src/Language/TIM.hs       |
+| Exercise 4.6 | /src/Language/TIM.hs       |
+| Exercise 4.7 | /src/Language/TIM.hs       |
+| Exercise 4.8 | /src/Language/TIM.hs       |
+| Exercise 4.9 | /exercises/exercise4-09.md |
+
+</p>
+</details>
+
 ## References
 
 <span id="reference-1">[Simon\[1\]](#text-1): Simon L Peyton Jones, David R Lester. January 1992. _Implementing functional languages: a tutorial_. Prentice Hall</span>
