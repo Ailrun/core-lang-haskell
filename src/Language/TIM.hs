@@ -422,8 +422,13 @@ showInstruction _ (PushV FramePtr) = iStr "PushV FramePtr"
 showInstruction _ (PushV (IntVConst n)) = iStr "PushV " `iAppend` iNum n
 showInstruction _ Return = iStr "Return"
 showInstruction _ (Op op) = iStr "Op " `iAppend` showOp op
+showInstruction None (Cond c1 c2)
+  = iConcat [ iStr "Cond ", showInstructions None c1, iStr " ", showInstructions None c2 ]
 showInstruction d (Cond c1 c2)
-  = iConcat [ iStr "Cond ", showInstructions d c1, iStr " ", showInstructions d c2 ]
+  = iConcat [ iStr "Cond "
+            , iIndent (iConcat [showInstructions d c1, iNewline, showInstructions d c2])
+            ]
+#endif
 
 showOp :: Op -> ISeq
 showOp Add = iStr "Add"
