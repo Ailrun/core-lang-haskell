@@ -526,7 +526,7 @@ intCode
 initialArgStack = [([], FrameNull)]
 
 showValueStack vStack
-  = iConcat [ iStr "Value stack:     { ", iInterleave (iStr ", ") (map iNum vStack), iStr " }" ]
+  = iConcat [ iStr "Value stack:     { ", iInterleave (iStr ", ") (map iNum vStack), iStr " }", iNewline ]
 
 #if __CLH_EXERCISE_4__ >= 5
 #if __CLH_EXERCISE_4__ < 6
