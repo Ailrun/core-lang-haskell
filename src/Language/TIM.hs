@@ -62,7 +62,9 @@ type Closure = ([Instruction], FramePtr)
 data TimValueStack = DummyTimValueStack
 #endif
 
+#if __CLH_EXERCISE_4__ < 16
 data TimDump = DummyTimDump
+#endif
 
 type TimHeap = Heap Frame
 
@@ -136,7 +138,9 @@ initialValueStack = DummyTimValueStack
 #endif
 
 initialDump :: TimDump
+#if __CLH_EXERCISE_4__ < 16
 initialDump = DummyTimDump
+#endif
 
 compiledPrimitives :: CodeStore
 #if __CLH_EXERCISE_4__ < 4
@@ -283,7 +287,9 @@ showValueStack _ = iNil
 #endif
 
 showDump :: TimDump -> ISeq
+#if __CLH_EXERCISE_4__ < 16
 showDump _ = iNil
+#endif
 
 showClosure :: Closure -> ISeq
 showClosure (inst, fPtr)
@@ -728,6 +734,7 @@ binaryNameToOp
     ]
 
 #if __CLH_EXERCISE_4__ >= 11
+#if __CLH_EXERCISE_4__ < 16
 data Instruction
   = Take Int Int
   | Enter TimAddrMode
@@ -828,6 +835,7 @@ compileSc env (name, args, body)
     (d, instructions) = compileR body env' argsLength
     env' = zip args (map Arg [1..]) ++ env
     argsLength = length args
+#endif
 
 compileR :: CoreExpr -> TimCompilerEnv -> Int -> (Int, [Instruction])
 #if __CLH_EXERCISE_4__ < 13
@@ -965,6 +973,7 @@ mkIndMode :: Int -> TimAddrMode
 mkIndMode = Code . return . Enter . Arg
 
 #if __CLH_EXERCISE_4__ >= 15
+#if __CLH_EXERCISE_4__ < 16
 compileR e@(EAp _ _) env d
   | isArithmeticExpr e = compileB e env d [Return]
 compileR e@(ENum _) env d = compileB e env d [Return]
@@ -997,6 +1006,7 @@ compileR e@(EVar _) env d = (d', [Enter am])
   where
     (d', am) = compileA e env d
 compileR e env d = error "compileR: can't do this yet"
+#endif
 
 compileB e env d cont
   | isArithmeticExpr e
@@ -1015,6 +1025,178 @@ compileB (ENum n) env d cont = (d, PushV (IntVConst n) : cont)
 compileB e env d cont = (d', Push (Code cont) : inst)
   where
     (d', inst) = compileR e env d
+
+#if __CLH_EXERCISE_4__ >= 16
+type TimDump = [(FramePtr, Int, TimStack)]
+
+initialDump = []
+
+showDump dump
+  = iConcat [ iStr "Dump:            [ "
+            , iIndent (iInterleave iNewline (map showDumpItem dump))
+            , iStr " ]"
+            ]
+
+showDumpItem :: (FramePtr, Int, TimStack) -> ISeq
+showDumpItem (fPtr, slot, stack)
+  = iConcat [ iStr "< ", showFramePtr fPtr, iStr ", ", iNum slot, iStr ", ", showShortStack 3 stack, iStr " >" ]
+
+showShortStack :: Int -> TimStack -> ISeq
+showShortStack limit stack
+  = iConcat [ iStr "[ ", iIndent (iInterleave (iStr ", ") shortClosureSeqs), iStr " ]" ]
+  where
+    closureSeqs = map showClosure stack
+    shortClosureSeqs
+      | length stack > limit = take limit closureSeqs ++ [ iStr "..." ]
+      | otherwise = closureSeqs
+
+data Instruction
+  = Take Int Int
+  | Enter TimAddrMode
+  | Push TimAddrMode
+  | PushV ValueAMode
+  | Return
+  | Op Op
+  | Cond [Instruction] [Instruction]
+  | Move Int TimAddrMode
+  | PushMarker Int
+
+showInstruction _ (Take t n)
+  = iConcat [ iStr "Take ", iNum t, iStr " ", iNum n ]
+showInstruction d (Enter x) = iStr "Enter " `iAppend` showArg d x
+showInstruction d (Push x) = iStr "Push " `iAppend` showArg d x
+showInstruction _ (PushV FramePtr) = iStr "PushV FramePtr"
+showInstruction _ (PushV (IntVConst n)) = iStr "PushV " `iAppend` iNum n
+showInstruction _ Return = iStr "Return"
+showInstruction _ (Op op) = iStr "Op " `iAppend` showOp op
+showInstruction None (Cond c1 c2)
+  = iConcat [ iStr "Cond ", showInstructions None c1, iStr " ", showInstructions None c2 ]
+showInstruction d (Cond c1 c2)
+  = iConcat [ iStr "Cond "
+            , iIndent (iConcat [showInstructions d c1, iNewline, showInstructions d c2])
+            ]
+showInstruction d (Move i x)
+  = iConcat [ iStr "Move ", iNum i, showArg d x ]
+showInstruction _ (PushMarker n) = iStr "PushMarker " `iAppend` iNum n
+
+step (Take t n : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  | length stack >= n = (inst, fPtr', drop n stack, vStack, dump, heap', cStore, statSpendTime (t + 1) stats)
+  | otherwise = error "Too few args for Take instruction"
+  where
+    (heap', fPtr') = fAlloc heap closures
+    closures = take n stack ++ replicate (t - n) ([], FrameNull)
+step ([Enter am], fPtr, stack, vStack, dump, heap, cStore, stats)
+  = (inst', fPtr', stack, vStack, dump, heap, cStore, statSpendTime 1 stats)
+  where
+    (inst', fPtr') = amToClosure am fPtr heap cStore
+step (Push am : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  = (inst, fPtr, stack', vStack, dump, heap, cStore, (statUpdateMaxStackDepth stack' . statSpendTime 1) stats)
+  where
+    stack' = amToClosure am fPtr heap cStore : stack
+step (PushV vMode : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  = case vMode of
+      FramePtr ->
+        case fPtr of
+          FrameInt n -> (inst, fPtr, stack, n : vStack, dump, heap, cStore, statSpendTime 1 stats)
+          _ -> error "Invalid frame pointer for PushV FramePtr"
+      IntVConst n -> (inst, fPtr, stack, n : vStack, dump, heap, cStore, statSpendTime 1 stats)
+step (inst@[Return], fPtr, [], vStack@(n : _), (fPtrU, i, stack') : dump', heap, cStore, stats)
+  = (inst, fPtr, stack', vStack, dump', heap', cStore, statSpendTime 1 stats)
+  where
+    heap' = fUpdate heap fPtrU i (intCode, FrameInt n)
+step ([Return], fPtr, stack, vStack, dump, heap, cStore, stats)
+  = case stack of
+      (inst', fPtr') : stack' -> (inst', fPtr', stack', vStack, dump, heap, cStore, statSpendTime 1 stats)
+      _ -> error "Invalid state to Return"
+step (Op op : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  | op `elem` aDomain binaryOpToFun
+  = case vStack of
+      n1 : n2 : ns -> (inst, fPtr, stack, binF n1 n2 : ns, dump, heap, cStore, (statSpendTime 1) stats)
+      _ -> error ("Not enough values for the operation " ++ iDisplay (showOp op))
+  | op `elem` aDomain unaryOpToFun
+  = case vStack of
+      n : ns -> (inst, fPtr, stack, unF n : ns, dump, heap, cStore, (statSpendTime 1) stats)
+      _ -> error ("Not enough values for the operation " ++ iDisplay (showOp op))
+  where
+    unF = aLookup unaryOpToFun op (error (iDisplay (showOp op) ++ " is not a unary operator"))
+    binF = aLookup binaryOpToFun op (error (iDisplay (showOp op) ++ " is not a binary operator"))
+step ([Cond inst1 inst2], fPtr, stack, vStack, dump, heap, cStore, stats)
+  = case vStack of
+      0 : vStack' -> (inst1, fPtr, stack, vStack', dump, heap, cStore, statSpendTime 1 stats)
+      _ : vStack' -> (inst2, fPtr, stack, vStack', dump, heap, cStore, statSpendTime 1 stats)
+      _ -> error "Invalid vStack for Cond"
+step (Move i am : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  = (inst, fPtr, stack, vStack, dump, heap', cStore, statSpendTime 1 stats)
+  where
+    heap' = fUpdate heap fPtr i (amToClosure am fPtr heap cStore)
+step (PushMarker i : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
+  = (inst, fPtr, [], vStack, (fPtr, i, stack) : dump, heap, cStore, statSpendTime 1 stats)
+
+#if __CLH_EXERCISE_4__ < 17
+compiledPrimitives
+  = [ ("+", [ Take 2 2, Push (Code [ Push (Code [ Op Add, Return ]), Enter (mkUpdIndMode 1) ]), Enter (mkUpdIndMode 2) ])
+    , ("-", [ Take 2 2, Push (Code [ Push (Code [ Op Sub, Return ]), Enter (mkUpdIndMode 1) ]), Enter (mkUpdIndMode 2) ])
+    , ("*", [ Take 2 2, Push (Code [ Push (Code [ Op Mul, Return ]), Enter (mkUpdIndMode 1) ]), Enter (mkUpdIndMode 2) ])
+    , ("/", [ Take 2 2, Push (Code [ Push (Code [ Op Div, Return ]), Enter (mkUpdIndMode 1) ]), Enter (mkUpdIndMode 2) ])
+
+    , ("negate", [ Take 1 1, Push (Code [ Op Neg, Return ]), Enter (mkUpdIndMode 1) ])
+
+    , ("if", [ Take 3 3, Push (Code [ Cond [Enter (mkUpdIndMode 2)] [Enter (mkUpdIndMode 3)] ]), Enter (mkUpdIndMode 1) ])
+
+    , (">", [ Take 2 2, Push (Code [ Push (Code [ Op Gt, Return ]), Enter (mkUpdIndMode 1) ]), Enter (mkUpdIndMode 2) ])
+    , (">=", [ Take 2 2, Push (Code [ Push (Code [ Op Ge, Return ]), Enter (mkUpdIndMode 1) ]), Enter (mkUpdIndMode 2) ])
+    , ("<", [ Take 2 2, Push (Code [ Push (Code [ Op Lt, Return ]), Enter (mkUpdIndMode 1) ]), Enter (mkUpdIndMode 2) ])
+    , ("<=", [ Take 2 2, Push (Code [ Push (Code [ Op Le, Return ]), Enter (mkUpdIndMode 1) ]), Enter (mkUpdIndMode 2) ])
+    , ("==", [ Take 2 2, Push (Code [ Push (Code [ Op Eq, Return ]), Enter (mkUpdIndMode 1) ]), Enter (mkUpdIndMode 2) ])
+    , ("~=", [ Take 2 2, Push (Code [ Push (Code [ Op Ne, Return ]), Enter (mkUpdIndMode 1) ]), Enter (mkUpdIndMode 2) ])
+    ]
+#endif
+
+compileSc env (name, args, body)
+  = case args of
+      [] -> (name, instructions)
+      _ -> (name, Take d argsLength : instructions)
+  where
+    (d, instructions) = compileR body env' argsLength
+    env' = zip args (map mkUpdIndMode [1..]) ++ env
+    argsLength = length args
+
+compileR e@(EAp _ _) env d
+  | isArithmeticExpr e = compileB e env d [Return]
+compileR e@(ENum _) env d = compileB e env d [Return]
+compileR (ELet isRec defs eBody) env d
+  = (d', moveDefs ++ inst)
+  where
+    (d', inst) = compileR eBody env' dn
+    env' = map (fst *** mkUpdIndMode) defWithSlots ++ env
+    (dn, moveDefs) = mapAccumL makeMoveFromDef lastSlotForDefs defWithSlots
+
+    makeMoveFromDef dDef ((_, eDef), slot)
+      = second (Move slot) (compileA eDef defEnv dDef)
+
+    defEnv
+      | isRec = env'
+      | otherwise = env
+
+    defWithSlots = zip defs [d + 1..lastSlotForDefs]
+    lastSlotForDefs = d + length defs
+compileR (EAp (EAp (EAp (EVar "if") e1) e2) e3) env d
+  = compileB e1 env (max d2 d3) [Cond inst2 inst3]
+  where
+    (d2, inst2) = compileR e2 env d
+    (d3, inst3) = compileR e3 env d2
+compileR (EAp e1 e2) env d = (d2, Push am : inst)
+  where
+    (d1, am) = compileA e2 env d
+    (d2, inst) = compileR e1 env d1
+compileR e@(EVar _) env d = (d', [Enter am])
+  where
+    (d', am) = compileA e env d
+compileR e env d = error "compileR: can't do this yet"
+
+mkUpdIndMode :: Int -> TimAddrMode
+mkUpdIndMode n = Code [PushMarker n, Enter (Arg n)]
+#endif
 #endif
 #endif
 #endif
