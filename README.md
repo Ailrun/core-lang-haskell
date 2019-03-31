@@ -169,6 +169,7 @@ This repository is about an implementation of a simple functional language based
 | Exercise 4.12 | /exercises/exercise4-12.md |
 | Exercise 4.13 | /src/Language/TIM.hs       |
 | Exercise 4.14 | /src/Language/TIM.hs       |
+| Exercise 4.15 | /src/Language/TIM.hs       |
 
 </p>
 </details>

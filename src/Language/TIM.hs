@@ -870,6 +870,7 @@ compileA e env d = (d', Code inst)
     (d', inst) = compileR e env d
 
 compileB :: CoreExpr -> TimCompilerEnv -> Int -> [Instruction] -> (Int, [Instruction])
+#if __CLH_EXERCISE_4__ < 15
 compileB e env d cont
   | isArithmeticExpr e
   = case e of
@@ -886,6 +887,7 @@ compileB (ENum n) env d cont = (d, PushV (IntVConst n) : cont)
 compileB e env d cont = (d', Push (Code cont) : inst)
   where
     (d', inst) = compileR e env d
+#endif
 
 #if __CLH_EXERCISE_4__ >= 13
 #if __CLH_EXERCISE_4__ < 14
@@ -924,6 +926,7 @@ compileR e env d = error "compileR: can't do this yet"
 #endif
 
 #if __CLH_EXERCISE_4__ >= 14
+#if __CLH_EXERCISE_4__ < 15
 compileR e@(EAp _ _) env d
   | isArithmeticExpr e = compileB e env d [Return]
 compileR e@(ENum _) env d = compileB e env d [Return]
@@ -956,9 +959,63 @@ compileR e@(EVar _) env d = (d', [Enter am])
   where
     (d', am) = compileA e env d
 compileR e env d = error "compileR: can't do this yet"
+#endif
 
 mkIndMode :: Int -> TimAddrMode
 mkIndMode = Code . return . Enter . Arg
+
+#if __CLH_EXERCISE_4__ >= 15
+compileR e@(EAp _ _) env d
+  | isArithmeticExpr e = compileB e env d [Return]
+compileR e@(ENum _) env d = compileB e env d [Return]
+compileR (ELet isRec defs eBody) env d
+  = (d', moveDefs ++ inst)
+  where
+    (d', inst) = compileR eBody env' dn
+    env' = map (fst *** mkIndMode) defWithSlots ++ env
+    (dn, moveDefs) = mapAccumL makeMoveFromDef lastSlotForDefs defWithSlots
+
+    makeMoveFromDef dDef ((_, eDef), slot)
+      = second (Move slot) (compileA eDef defEnv dDef)
+
+    defEnv
+      | isRec = env'
+      | otherwise = env
+
+    defWithSlots = zip defs [d + 1..lastSlotForDefs]
+    lastSlotForDefs = d + length defs
+compileR (EAp (EAp (EAp (EVar "if") e1) e2) e3) env d
+  = compileB e1 env (max d2 d3) [Cond inst2 inst3]
+  where
+    (d2, inst2) = compileR e2 env d
+    (d3, inst3) = compileR e3 env d2
+compileR (EAp e1 e2) env d = (d2, Push am : inst)
+  where
+    (d1, am) = compileA e2 env d
+    (d2, inst) = compileR e1 env d1
+compileR e@(EVar _) env d = (d', [Enter am])
+  where
+    (d', am) = compileA e env d
+compileR e env d = error "compileR: can't do this yet"
+
+compileB e env d cont
+  | isArithmeticExpr e
+  = case e of
+      EAp (EVar name) e ->
+        compileB e env d (Op Neg : cont)
+      EAp (EAp (EVar name) e1) e2 ->
+        let
+          (d1, cont') = compileB e1 env d (Op (getOp name) : cont)
+          (d2, inst) = compileB e2 env d cont'
+        in
+          (max d1 d2, inst)
+  where
+    getOp name = aLookup binaryNameToOp name (error (name ++ " is not a binary operator"))
+compileB (ENum n) env d cont = (d, PushV (IntVConst n) : cont)
+compileB e env d cont = (d', Push (Code cont) : inst)
+  where
+    (d', inst) = compileR e env d
+#endif
 #endif
 #endif
 #endif
