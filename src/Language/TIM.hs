@@ -1161,6 +1161,7 @@ compileSc env (name, args, body)
     env' = zip args (map mkUpdIndMode [1..]) ++ env
     argsLength = length args
 
+#if __CLH_EXERCISE_4__ < 17
 compileR e@(EAp _ _) env d
   | isArithmeticExpr e = compileB e env d [Return]
 compileR e@(ENum _) env d = compileB e env d [Return]
@@ -1193,9 +1194,67 @@ compileR e@(EVar _) env d = (d', [Enter am])
   where
     (d', am) = compileA e env d
 compileR e env d = error "compileR: can't do this yet"
+#endif
 
 mkUpdIndMode :: Int -> TimAddrMode
 mkUpdIndMode n = Code [PushMarker n, Enter (Arg n)]
+
+#if __CLH_EXERCISE_4__ >= 17
+compiledPrimitives
+  = [ ("+", [ Take 2 2, Push (Code [ Push (Code [ Op Add, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("-", [ Take 2 2, Push (Code [ Push (Code [ Op Sub, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("*", [ Take 2 2, Push (Code [ Push (Code [ Op Mul, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("/", [ Take 2 2, Push (Code [ Push (Code [ Op Div, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+
+    , ("negate", [ Take 1 1, Push (Code [ Op Neg, Return ]), PushMarker 1, Enter (Arg 1) ])
+
+    , ("if", [ Take 3 3, Push (Code [ Cond [PushMarker 2, Enter (Arg 2)] [PushMarker 3, Enter (Arg 3)] ]), PushMarker 1, Enter (Arg 1) ])
+
+    , (">", [ Take 2 2, Push (Code [ Push (Code [ Op Gt, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , (">=", [ Take 2 2, Push (Code [ Push (Code [ Op Ge, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("<", [ Take 2 2, Push (Code [ Push (Code [ Op Lt, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("<=", [ Take 2 2, Push (Code [ Push (Code [ Op Le, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("==", [ Take 2 2, Push (Code [ Push (Code [ Op Eq, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("~=", [ Take 2 2, Push (Code [ Push (Code [ Op Ne, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    ]
+
+compileR e@(EAp _ _) env d
+  | isArithmeticExpr e = compileB e env d [Return]
+compileR e@(ENum _) env d = compileB e env d [Return]
+compileR (ELet isRec defs eBody) env d
+  = (d', moveDefs ++ inst)
+  where
+    (d', inst) = compileR eBody env' dn
+    env' = map (fst *** mkUpdIndMode) defWithSlots ++ env
+    (dn, moveDefs) = mapAccumL makeMoveFromDef lastSlotForDefs defWithSlots
+
+    makeMoveFromDef dDef ((_, eDef), slot)
+      = second (Move slot) (compileA eDef defEnv dDef)
+
+    defEnv
+      | isRec = env'
+      | otherwise = env
+
+    defWithSlots = zip defs [d + 1..lastSlotForDefs]
+    lastSlotForDefs = d + length defs
+compileR (EAp (EAp (EAp (EVar "if") e1) e2) e3) env d
+  = compileB e1 env (max d2 d3) [Cond inst2 inst3]
+  where
+    (d2, inst2) = compileR e2 env d
+    (d3, inst3) = compileR e3 env d2
+compileR (EAp e1 e2) env d = (d2, Push am : inst)
+  where
+    (d1, am) = compileA e2 env d
+    (d2, inst) = compileR e1 env d1
+compileR e@(EVar _) env d = (d', mkEnter am)
+  where
+    (d', am) = compileA e env d
+compileR e env d = error "compileR: can't do this yet"
+
+mkEnter :: TimAddrMode -> [Instruction]
+mkEnter (Code i) = i
+mkEnter am = [Enter am]
+#endif
 #endif
 #endif
 #endif
