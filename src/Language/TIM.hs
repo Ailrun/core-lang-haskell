@@ -1463,6 +1463,7 @@ step (inst@(UpdateMarkers n : inst'), fPtr, stack, vStack, dump, heap, cStore, s
 
     stackLength = length stack
 
+#if __CLH_EXERCISE_4__ < 22
 compileSc env (name, args, body)
   | d > 0 = (name, UpdateMarkers argsLength : Take d argsLength : instructions)
   | otherwise = (name, instructions)
@@ -1470,6 +1471,18 @@ compileSc env (name, args, body)
     (d, instructions) = compileR body env' argsLength
     env' = zip args (map Arg [1..]) ++ env
     argsLength = length args
+#endif
+
+#if __CLH_EXERCISE_4__ >= 22
+compileSc env (name, args, body)
+  | argsLength > 0 = (name, UpdateMarkers argsLength : Take d argsLength : instructions)
+  | d > 0 = (name, Take d argsLength : instructions)
+  | otherwise = (name, instructions)
+  where
+    (d, instructions) = compileR body env' argsLength
+    env' = zip args (map Arg [1..]) ++ env
+    argsLength = length args
+#endif
 #endif
 #endif
 #endif
