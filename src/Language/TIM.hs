@@ -1076,7 +1076,7 @@ showInstruction d (Cond c1 c2)
             , iIndent (iConcat [showInstructions d c1, iNewline, showInstructions d c2])
             ]
 showInstruction d (Move i x)
-  = iConcat [ iStr "Move ", iNum i, showArg d x ]
+  = iConcat [ iStr "Move ", iNum i, iStr " ", showArg d x ]
 showInstruction _ (PushMarker n) = iStr "PushMarker " `iAppend` iNum n
 
 step (Take t n : inst, fPtr, stack, vStack, dump, heap, cStore, stats)
