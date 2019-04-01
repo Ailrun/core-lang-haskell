@@ -828,9 +828,8 @@ compiledPrimitives
     ]
 
 compileSc env (name, args, body)
-  = case args of
-      [] -> (name, instructions)
-      _ -> (name, Take d argsLength : instructions)
+  | d > 0 = (name, Take d argsLength : instructions)
+  | otherwise = (name, instructions)
   where
     (d, instructions) = compileR body env' argsLength
     env' = zip args (map Arg [1..]) ++ env
@@ -1153,9 +1152,8 @@ compiledPrimitives
 #endif
 
 compileSc env (name, args, body)
-  = case args of
-      [] -> (name, instructions)
-      _ -> (name, Take d argsLength : instructions)
+  | d > 0 = (name, Take d argsLength : instructions)
+  | otherwise = (name, instructions)
   where
     (d, instructions) = compileR body env' argsLength
     env' = zip args (map mkUpdIndMode [1..]) ++ env
