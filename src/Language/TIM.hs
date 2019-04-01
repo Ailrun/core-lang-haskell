@@ -1291,10 +1291,20 @@ compileR e@(EVar _) env d = (d', mkEnter am)
     (d', am) = compileA e env d
 compileR e env d = error "compileR: can't do this yet"
 
+#if __CLH_EXERCISE_4__ < 19
 compileU :: CoreExpr -> Int -> TimCompilerEnv -> Int -> (Int, TimAddrMode)
 compileU e slot env d = (d', Code (PushMarker slot : inst))
   where
     (d', inst) = compileR e env d
+#endif
+
+#if __CLH_EXERCISE_4__ >= 19
+compileU :: CoreExpr -> Int -> TimCompilerEnv -> Int -> (Int, TimAddrMode)
+compileU (ENum n) slot env d = (d, IntConst n)
+compileU e slot env d = (d', Code (PushMarker slot : inst))
+  where
+    (d', inst) = compileR e env d
+#endif
 #endif
 #endif
 #endif
