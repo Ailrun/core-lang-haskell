@@ -869,12 +869,14 @@ compileR e@(EVar _) env d = (d', [Enter am])
 compileR e env d = error "compileR: can't do this yet"
 #endif
 
+#if __CLH_EXERCISE_4__ < 20
 compileA :: CoreExpr -> TimCompilerEnv -> Int -> (Int, TimAddrMode)
 compileA (EVar v) env d = (d, aLookup env v (error ("Unknown variable " ++ v)))
 compileA (ENum n) env d = (d, IntConst n)
 compileA e env d = (d', Code inst)
   where
     (d', inst) = compileR e env d
+#endif
 
 compileB :: CoreExpr -> TimCompilerEnv -> Int -> [Instruction] -> (Int, [Instruction])
 #if __CLH_EXERCISE_4__ < 15
@@ -1151,6 +1153,7 @@ compiledPrimitives
     ]
 #endif
 
+#if __CLH_EXERCISE_4__ < 20
 compileSc env (name, args, body)
   | d > 0 = (name, Take d argsLength : instructions)
   | otherwise = (name, instructions)
@@ -1158,6 +1161,7 @@ compileSc env (name, args, body)
     (d, instructions) = compileR body env' argsLength
     env' = zip args (map mkUpdIndMode [1..]) ++ env
     argsLength = length args
+#endif
 
 #if __CLH_EXERCISE_4__ < 17
 compileR e@(EAp _ _) env d
@@ -1256,6 +1260,7 @@ mkEnter (Code i) = i
 mkEnter am = [Enter am]
 
 #if __CLH_EXERCISE_4__ >= 18
+#if __CLH_EXERCISE_4__ < 20
 compileR e@(EAp _ _) env d
   | isArithmeticExpr e = compileB e env d [Return]
 compileR e@(ENum _) env d = compileB e env d [Return]
@@ -1288,6 +1293,7 @@ compileR e@(EVar _) env d = (d', mkEnter am)
   where
     (d', am) = compileA e env d
 compileR e env d = error "compileR: can't do this yet"
+#endif
 
 #if __CLH_EXERCISE_4__ < 19
 compileU :: CoreExpr -> Int -> TimCompilerEnv -> Int -> (Int, TimAddrMode)
@@ -1302,6 +1308,60 @@ compileU (ENum n) slot env d = (d, IntConst n)
 compileU e slot env d = (d', Code (PushMarker slot : inst))
   where
     (d', inst) = compileR e env d
+
+#if __CLH_EXERCISE_4__ >= 20
+-- |
+-- 'compileSc' should be changed too
+-- to make arguments of supercombinators freely copyable.
+compileSc env (name, args, body)
+  | d > 0 = (name, Take d argsLength : instructions)
+  | otherwise = (name, instructions)
+  where
+    (d, instructions) = compileR body env' argsLength
+    env' = zip args (map Arg [1..]) ++ env
+    argsLength = length args
+
+compileR e@(EAp _ _) env d
+  | isArithmeticExpr e = compileB e env d [Return]
+compileR e@(ENum _) env d = compileB e env d [Return]
+compileR (ELet isRec defs eBody) env d
+  = (d', moveDefs ++ inst)
+  where
+    (d', inst) = compileR eBody env' dn
+    env' = map (fst *** mkIndMode) defWithSlots ++ env
+    (dn, moveDefs) = mapAccumL makeMoveFromDef lastSlotForDefs defWithSlots
+
+    makeMoveFromDef dDef ((_, eDef), slot)
+      = second (Move slot) (compileU eDef slot defEnv dDef)
+
+    defEnv
+      | isRec = env'
+      | otherwise = env
+
+    defWithSlots = zip defs [d + 1..lastSlotForDefs]
+    lastSlotForDefs = d + length defs
+compileR (EAp (EAp (EAp (EVar "if") e1) e2) e3) env d
+  = compileB e1 env (max d2 d3) [Cond inst2 inst3]
+  where
+    (d2, inst2) = compileR e2 env d
+    (d3, inst3) = compileR e3 env d2
+compileR (EAp e eAtomic) env d
+  | isAExpr eAtomic = (d', Push (compileA eAtomic env) : inst)
+  where
+    (d', inst) = compileR e env d
+compileR (EAp eFun eArg) env d
+  = (dFun, Move argSlot am : Push (mkIndMode argSlot) : iFun)
+  where
+    (dFun, iFun) = compileR eFun env dArg
+    (dArg, am) = compileU eArg argSlot env argSlot
+    argSlot = d + 1
+compileR e@(EVar _) env d = (d, mkEnter (compileA e env))
+compileR e env d = error "compileR: can't do this yet"
+
+compileA :: CoreExpr -> TimCompilerEnv -> TimAddrMode
+compileA (ENum n) env = IntConst n
+compileA (EVar v) env = aLookup env v (error ("Unknown variable " ++ v))
+#endif
 #endif
 #endif
 #endif
