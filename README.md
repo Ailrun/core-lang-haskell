@@ -178,6 +178,8 @@ This repository is about an implementation of a simple functional language based
 | Exercise 4.21 | /src/Language/TIM.hs       |
 | Exercise 4.22 | /src/Language/TIM.hs       |
 | Exercise 4.23 | /src/Language/TIM.hs       |
+| Exercise 4.24 | /src/Language/TIM.hs       |
+| Exercise 4.25 | /src/Language/TIM.hs       |
 
 </p>
 </details>
