@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
 module Language.TIM
-  ( run
+  ( timRun
+  , run
+  , timFullRun
   , compile
   , eval
   , showResults
@@ -20,6 +22,9 @@ run :: String -> String
 compile :: CoreProgram -> TimState
 eval :: TimState -> [TimState]
 showResults :: [TimState] -> String
+
+timRun = putStrLn . run
+timFullRun = putStrLn . fullRun
 
 run = showResults . eval . compile . parse
 
