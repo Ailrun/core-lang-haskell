@@ -15,11 +15,10 @@ iDisplay :: ISeq -> String
 
 #if __CLH_EXERCISE_1__ >= 2
 iConcat :: [ISeq] -> ISeq
-iConcat = foldl iAppend iNil
+iConcat = foldr iAppend iNil
 
 iInterleave :: ISeq -> [ISeq] -> ISeq
-iInterleave _ [] = iNil
-iInterleave sep (seq : seqs) = foldl (\s acc -> s `iAppend` sep `iAppend` acc) seq seqs
+iInterleave sep seqs = foldr iAppend iNil (intersperse sep seqs)
 
 #if __CLH_EXERCISE_1__ < 6
 data ISeq
@@ -34,15 +33,15 @@ iNil = INil
 iStr = IStr
 #endif
 
-#if __CLH_EXERCISE_1__ < 5
+#if __CLH_EXERCISE_1__ != 5
 iAppend = IAppend
 #endif
 
-#if __CLH_EXERCISE_1__ >= 5
-iAppend INil INil = INil
+#if __CLH_EXERCISE_1__ == 5
 iAppend INil seq2 = seq2
 iAppend seq1 INil = seq1
 iAppend seq1 seq2 = IAppend seq1 seq2
+#endif
 
 #if __CLH_EXERCISE_1__ < 6
 iIndent seq = seq
@@ -111,7 +110,6 @@ iLayn seqs
   where
     layItem n seq
       = iConcat [ iFWNum 4 n, iStr ") ", iIndent seq, iNewline ]
-#endif
 #endif
 #endif
 #endif
