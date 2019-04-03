@@ -1062,7 +1062,7 @@ initialDump = []
 showDump dump
   = iConcat [ iStr "Dump:            [ "
             , iIndent (iInterleave iNewline (map showDumpItem dump))
-            , iStr " ]"
+            , iStr " ]", iNewline
             ]
 #endif
 
@@ -1603,7 +1603,7 @@ showStack stack
 showDump dump
   = iConcat [ iStr "Dump:                 [ "
             , iIndent (iInterleave iNewline (map showDumpItem dump))
-            , iStr " ]"
+            , iStr " ]", iNewline
             ]
 
 showValueStack vStack
