@@ -251,6 +251,7 @@ showFullResults states = iDisplay fullResultsSeq
                 , showStats (last states)
                 ]
 
+#if __CLH_EXERCISE_4__ < 26
 showResults states = iDisplay resultsSeq
   where
     resultsSeq
@@ -259,6 +260,7 @@ showResults states = iDisplay resultsSeq
                 , showStats lastState
                 ]
     lastState = last states
+#endif
 
 showScDefns :: TimState -> ISeq
 #if __CLH_EXERCISE_4__ < 23
@@ -2091,6 +2093,24 @@ compile program
 
 initialOutput :: TimOutput
 initialOutput = []
+
+#if __CLH_EXERCISE_4__ >= 26
+showResults states = iDisplay resultsSeq
+  where
+    resultsSeq
+      = iConcat [ showEagerOutput states, iNewline
+                , showState lastState, iNewline
+                , iNewline
+                , showStats lastState
+                ]
+    lastState = last states
+
+showEagerOutput :: [TimState] -> ISeq
+showEagerOutput = iInterleave (iStr ".") . map (iInterleave (iStr ",") . map iNum . (uncurry getOutputDiff)) . uncurry zip . (id &&& tail)
+
+getOutputDiff :: TimState -> TimState -> [Int]
+getOutputDiff (prevOutput, _, _, _, _, _, _, _, _, _) (nextOutput, _, _, _, _, _, _, _, _, _) = drop (length prevOutput) nextOutput
+#endif
 #endif
 #endif
 #endif
