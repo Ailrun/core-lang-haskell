@@ -74,31 +74,31 @@ type GmOutput = String
 
 type GmCode = [Instruction]
 data Instruction
-  = Unwind
+  = Push Int
   | PushGlobal GlobalMode
   | PushInt Int
-  | Push Int
-  | MkAp
-  | Update Int
+  | PushBasic Int
   | Pop Int
-  | Alloc Int
   | Slide Int
-  | Eval
+  | Update Int
+  | UpdateInt Int
+  | UpdateBool Int
+  | Alloc Int
+  | Pack Int Int
+  | Split Int
+  | CaseJump (Assoc Int GmCode)
+  | Cond GmCode GmCode
+  | MkAp
+  | MkInt
+  | MkBool
+  | Get
   | Add | Sub | Mul | Div
   | Neg
   | Eq | Ne | Lt | Le | Gt | Ge
-  | Cond GmCode GmCode
-  | Pack Int Int
-  | CaseJump (Assoc Int GmCode)
-  | Split Int
-  | Print
-  | PushBasic Int
-  | MkBool
-  | MkInt
-  | Get
+  | Eval
   | Return
-  | UpdateInt Int
-  | UpdateBool Int
+  | Unwind
+  | Print
   deriving (Show, Read, Eq)
 data GlobalMode
   = GlobalLabel Name
@@ -168,8 +168,8 @@ dispatch (Split arity) = split arity
 dispatch (CaseJump alters) = caseJump alters
 dispatch (Cond c1 c2) = cond c1 c2
 dispatch MkAp = mkAp
-dispatch MkBool = mkBool
 dispatch MkInt = mkInt
+dispatch MkBool = mkBool
 dispatch Get = getInstruction
 dispatch Add = dyadicIntOp (+)
 dispatch Sub = dyadicIntOp (-)
@@ -182,9 +182,9 @@ dispatch Lt = dyadicBoolOp (<)
 dispatch Le = dyadicBoolOp (<=)
 dispatch Gt = dyadicBoolOp (>)
 dispatch Ge = dyadicBoolOp (>=)
-dispatch Unwind = unwind
 dispatch Eval = evalInstruction
 dispatch Return = returnInstruction
+dispatch Unwind = unwind
 dispatch Print = printInstruction
 
 push :: Int -> GmState -> GmState
@@ -304,19 +304,19 @@ mkAp state = putHeap heap' (putStack (a : as) state)
     (heap', a) = hAlloc (getHeap state) (NAp a1 a2)
     a1 : a2 : as = getStack state
 
-mkBool :: GmState -> GmState
-mkBool state = putVStack vStack' (putHeap heap' (putStack stack' state))
-  where
-    stack' = a : getStack state
-    (heap', a) = hAlloc (getHeap state) (NConstr tag [])
-    tag : vStack' = getVStack state
-
 mkInt :: GmState -> GmState
 mkInt state = putVStack vStack' (putHeap heap' (putStack stack' state))
   where
     stack' = a : getStack state
     (heap', a) = hAlloc (getHeap state) (NNum n)
     n : vStack' = getVStack state
+
+mkBool :: GmState -> GmState
+mkBool state = putVStack vStack' (putHeap heap' (putStack stack' state))
+  where
+    stack' = a : getStack state
+    (heap', a) = hAlloc (getHeap state) (NConstr tag [])
+    tag : vStack' = getVStack state
 
 getInstruction :: GmState -> GmState
 getInstruction state
@@ -344,6 +344,20 @@ dyadicBoolOp op = dyadicIntOp ((convert .) . op)
   where
     convert True = 2
     convert False = 1
+
+evalInstruction :: GmState -> GmState
+evalInstruction state = putCode [Unwind] (putStack [a] (putDump dump' state))
+  where
+    dump' = (code, as, getVStack state) : getDump state
+    a : as = getStack state
+    code = getCode state
+
+returnInstruction :: GmState -> GmState
+returnInstruction state
+  = putStack stack' (putDump dump' (putVStack vStack' (putCode code' state)))
+  where
+    stack' = last (getStack state) : as
+    (code', as, vStack') : dump' = getDump state
 
 unwind :: GmState -> GmState
 unwind state = newState (hLookup heap a)
@@ -375,20 +389,6 @@ rearrange n heap as
 
 getArg :: Node -> Addr
 getArg (NAp a1 a2) = a2
-
-evalInstruction :: GmState -> GmState
-evalInstruction state = putCode [Unwind] (putStack [a] (putDump dump' state))
-  where
-    dump' = (code, as, getVStack state) : getDump state
-    a : as = getStack state
-    code = getCode state
-
-returnInstruction :: GmState -> GmState
-returnInstruction state
-  = putStack stack' (putDump dump' (putVStack vStack' (putCode code' state)))
-  where
-    stack' = last (getStack state) : as
-    (code', as, vStack') : dump' = getDump state
 
 printInstruction :: GmState -> GmState
 printInstruction state =
@@ -662,18 +662,25 @@ showInstructions is
             ]
 
 showInstruction :: Instruction -> ISeq
-showInstruction Unwind = iStr "Unwind"
-showInstruction (PushGlobal f) = iStr "PushGlobal " `iAppend` showGlobalMode f
 showInstruction (Push n) = iStr "Push " `iAppend` iNum n
+showInstruction (PushGlobal f) = iStr "PushGlobal " `iAppend` showGlobalMode f
 showInstruction (PushInt n) = iStr "PushInt " `iAppend` iNum n
-showInstruction MkAp = iStr "MkAp"
+showInstruction (PushBasic n) = iStr "PushBasic " `iAppend` iNum n
+showInstruction (Pop n) = iStr "Pop " `iAppend` iNum n
+showInstruction (Slide n) = iStr "Slide " `iAppend` iNum n
 showInstruction (Update n) = iStr "Update " `iAppend` iNum n
 showInstruction (UpdateInt n) = iStr "UpdateInt " `iAppend` iNum n
 showInstruction (UpdateBool n) = iStr "UpdateBool " `iAppend` iNum n
-showInstruction (Pop n) = iStr "Pop " `iAppend` iNum n
 showInstruction (Alloc n) = iStr "Alloc " `iAppend` iNum n
-showInstruction (Slide n) = iStr "Slide " `iAppend` iNum n
-showInstruction Eval = iStr "Eval"
+showInstruction (Pack tag arity)
+  = iConcat [ iStr "Pack{", iNum tag, iStr ",", iNum arity, iStr "}" ]
+showInstruction (Split arity) = iStr "Split " `iAppend` iNum arity
+showInstruction (CaseJump alters) = iStr "CaseJump " `iAppend` showAlters alters
+showInstruction (Cond c1 c2) = iStr "Cond " `iAppend` showAlters [(2, c1), (1, c2)]
+showInstruction MkAp = iStr "MkAp"
+showInstruction MkInt = iStr "MkInt"
+showInstruction MkBool = iStr "MkBool"
+showInstruction Get = iStr "Get"
 showInstruction Add = iStr "Add"
 showInstruction Sub = iStr "Sub"
 showInstruction Mul = iStr "Mul"
@@ -685,17 +692,10 @@ showInstruction Lt = iStr "Lt"
 showInstruction Le = iStr "Le"
 showInstruction Gt = iStr "Gt"
 showInstruction Ge = iStr "Ge"
-showInstruction (Cond c1 c2) = iStr "Cond " `iAppend` showAlters [(2, c1), (1, c2)]
-showInstruction (Pack tag arity)
-  = iConcat [ iStr "Pack{", iNum tag, iStr ",", iNum arity, iStr "}" ]
-showInstruction (CaseJump alters) = iStr "CaseJump " `iAppend` showAlters alters
-showInstruction (Split arity) = iStr "Split " `iAppend` iNum arity
-showInstruction (PushBasic n) = iStr "PushBasic " `iAppend` iNum n
-showInstruction MkBool = iStr "MkBool"
-showInstruction MkInt = iStr "MkInt"
-showInstruction Get = iStr "Get"
-showInstruction Print = iStr "Print"
+showInstruction Eval = iStr "Eval"
 showInstruction Return = iStr "Return"
+showInstruction Unwind = iStr "Unwind"
+showInstruction Print = iStr "Print"
 
 showGlobalMode :: GlobalMode -> ISeq
 showGlobalMode (GlobalLabel name) = iStr name
