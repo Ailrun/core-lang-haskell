@@ -98,11 +98,13 @@ fList f = f
 
 type Frame = [Closure]
 
+#if __CLH_EXERCISE_4__ < 27
 type CodeStore = Assoc Name [Instruction]
 
 codeLookup :: CodeStore -> Name -> [Instruction]
 codeLookup cStore l
   = aLookup cStore l (error ("Attempt to jump to unknown label " ++ show l))
+#endif
 
 statInitial :: TimStats
 statIncSteps :: TimStats -> TimStats
@@ -1549,12 +1551,14 @@ compileSc env (name, args, body)
     argsLength = length args
 
 #if __CLH_EXERCISE_4__ >= 23
+#if __CLH_EXERCISE_4__ < 30
 data TimAddrMode
   = Arg Int
   | Label Name
   | Code [Instruction]
   | IntConst Int
   | Data Int
+#endif
 
 #if __CLH_EXERCISE_4__ < 25
 type TimState
@@ -1692,11 +1696,13 @@ showAlter :: HowMuchToPrint -> (Int, [Instruction]) -> ISeq
 showAlter d (tag, inst)
   = iConcat [ iNum tag, iStr " -> ", showInstructions d inst ]
 
+#if __CLH_EXERCISE_4__ < 30
 showArg _ (Arg n) = iStr "Arg " `iAppend` iNum n
 showArg d (Code inst) = iStr "Code " `iAppend` showInstructions d inst
 showArg _ (Label s) = iStr "Label " `iAppend` iStr s
 showArg _ (IntConst n) = iStr "IntConst " `iAppend` iNum n
 showArg _ (Data n) = iStr "Data " `iAppend` iNum n
+#endif
 
 #if __CLH_EXERCISE_4__ < 25
 step (Take t n : inst, fPtr, fDPtr, stack, vStack, dump, heap, cStore, stats)
@@ -1777,11 +1783,13 @@ step (inst@[ReturnConstr t], fPtr, fDPtr, stack, vStack, dump, heap, cStore, sta
 #endif
 
 amToClosure :: TimAddrMode -> FramePtr -> FramePtr -> TimHeap -> CodeStore -> Closure
+#if __CLH_EXERCISE_4__ < 27
 amToClosure (Arg n) fPtr fDPtr heap cStore = fGet heap fPtr n
 amToClosure (Code inst) fPtr fDPtr heap cStore = (inst, fPtr)
 amToClosure (Label l) fPtr fDPtr heap cStore = (codeLookup cStore l, fPtr)
 amToClosure (IntConst n) fPtr fDPtr heap cStore = (intCode, FrameInt n)
 amToClosure (Data n) fPtr fDPtr heap cStore = fGet heap fDPtr n
+#endif
 
 boolBinaryFunToIntBinaryFun f n1 n2
   = if f n1 n2
@@ -1936,8 +1944,10 @@ timFinal _ = False
 applyToStats statsFun (output, inst, fPtr, dFPtr, stack, vStack, dump, heap, cStore, stats)
   = (output, inst, fPtr, dFPtr, stack, vStack, dump, heap, cStore, statsFun stats)
 
+#if __CLH_EXERCISE_4__ < 27
 showScDefns (_, _, _, _, _, _, _, _, cStore, _)
   = iInterleave iNewline (map showSc cStore)
+#endif
 
 showState (output, inst, fPtr, fDPtr, stack, vStack, dump, heap, _, _)
   = iConcat [ iStr "Code:                 ", showInstructions Terse inst, iNewline
@@ -2075,6 +2085,7 @@ step (output, Print : inst', fPtr, fDPtr, stack, vStack, dump, heap, cStore, sta
       v : vStack ->
         (output ++ [v], inst', fPtr, fDPtr, stack, vStack, dump, heap, cStore, statSpendTime 1 stats)
 
+#if __CLH_EXERCISE_4__ < 27
 compile program
   = ( initialOutput
     , [Enter (Label "main")]
@@ -2110,6 +2121,7 @@ compile program
                        ])
                  ]
         ]
+#endif
 
 initialOutput :: TimOutput
 initialOutput = []
@@ -2130,6 +2142,228 @@ showEagerOutput = iInterleave (iStr ".") . map (iInterleave (iStr ",") . map iNu
 
 getOutputDiff :: TimState -> TimState -> [Int]
 getOutputDiff (prevOutput, _, _, _, _, _, _, _, _, _) (nextOutput, _, _, _, _, _, _, _, _, _) = drop (length prevOutput) nextOutput
+
+#if __CLH_EXERCISE_4__ >= 27
+type CodeStore = (FramePtr, Assoc Name Int)
+
+showScDefns (_, _, _, _, _, _, _, heap, (gFPtr, labelToSlot), _)
+  = iInterleave iNewline (map showSc scDefns)
+  where
+    scDefns = map (second (fst . fGet heap gFPtr)) labelToSlot
+
+#if __CLH_EXERCISE_4__ < 30
+amToClosure (Arg n) fPtr _ heap _ = fGet heap fPtr n
+amToClosure (Code inst) fPtr _ _ _ = (inst, fPtr)
+amToClosure (Label l) _ _ heap cStore = closureLookup heap cStore l
+amToClosure (IntConst n) _ _ _ _ = (intCode, FrameInt n)
+amToClosure (Data n) _ fDPtr heap _ = fGet heap fDPtr n
+#endif
+
+closureLookup :: TimHeap -> CodeStore -> Name -> Closure
+closureLookup heap (gFPtr, labelToSlot) l = (inst, fPtr)
+  where
+    (inst, fPtr) = fGet heap gFPtr slot
+    slot = aLookup labelToSlot l (error ("Attempt to jump to unknown label " ++ show l))
+
+#if __CLH_EXERCISE_4__ < 28
+compile program
+  = ( initialOutput
+    , [Enter (Label "main")]
+    , initialFramePtr
+    , FrameNull
+    , initialArgStack
+    , initialValueStack
+    , initialDump
+    , initialHeap
+    , initialCStore
+    , statInitial
+    )
+  where
+    initialArgStack = [(cont, initialFramePtr)]
+    initialFramePtr = fst initialCStore
+    (initialHeap, initialCStore) = allocateInitialHeap compiledCode
+
+    compiledCode = compiledScDefns ++ compiledPrimitives
+    compiledScDefns = map (compileSc initialEnv) scDefns
+    scDefns = preludeDefs ++ program
+
+    initialEnv
+      = [ (name, Code [ Enter (Label name) ]) | (name, _, _) <- scDefns ]
+      ++ [ (name, Code [ Enter (Label name) ]) | (name, _) <- compiledPrimitives ]
+
+    cont
+      = [ Switch [ (1, [])
+                 , (2, [ Move 1 (Data 1)
+                       , Move 2 (Data 2)
+                       , Push (Code [ Print
+                                    , Push (Code cont)
+                                    , Enter (Arg 2)
+                                    ])
+                       , Enter (Arg 1)
+                       ])
+                 ]
+        ]
+#endif
+
+allocateInitialHeap :: [(Name, [Instruction])] -> (TimHeap, CodeStore)
+#if __CLH_EXERCISE_4__ < 28
+allocateInitialHeap compiledCode
+  = (heap, (gFPtr, offsets))
+  where
+    (heap, gFPtr) = fAlloc hInitial (replicate 2 ([], FrameNull) ++ closures)
+    closures = [ (PushMarker offset : code, gFPtr)
+               | (offset, (_, code)) <- indexedCode ]
+    offsets = [ (name, offset) | (offset, (name, _)) <- indexedCode ]
+    indexedCode = zip globalSlots compiledCode
+#endif
+
+globalSlots :: [Int]
+globalSlots = [3..]
+
+#if __CLH_EXERCISE_4__ >= 28
+allocateInitialHeap compiledCode
+  = (heap, (gFPtr, offsets))
+  where
+    (heap, gFPtr) = fAlloc hInitial (replicate 2 ([], FrameNull) ++ closures)
+    closures = [ (getCodeForUpdate offset code, gFPtr)
+               | (offset, (_, code)) <- indexedCode ]
+    offsets = [ (name, offset) | (offset, (name, _)) <- indexedCode ]
+    indexedCode = zip globalSlots compiledCode
+
+    getCodeForUpdate offset code
+      = case code of
+          UpdateMarkers n : _
+            | n > 0 -> code
+          _ -> PushMarker offset : code
+
+#if __CLH_EXERCISE_4__ >= 29
+#if __CLH_EXERCISE_4__ < 30
+compile program
+  = ( initialOutput
+    , [Enter (Label "main")]
+    , initialFramePtr
+    , FrameNull
+    , initialArgStack
+    , initialValueStack
+    , initialDump
+    , initialHeap
+    , initialCStore
+    , statInitial
+    )
+  where
+    initialArgStack = [(cont, initialFramePtr)]
+    initialFramePtr = fst initialCStore
+    (initialHeap, initialCStore) = allocateInitialHeap compiledCode
+
+    compiledCode = compiledScDefns ++ compiledPrimitives
+    compiledScDefns = map (compileSc initialEnv) scDefns
+    scDefns = preludeDefs ++ program
+
+    initialEnv
+      = [ (name, mkInitialScMode name args) | (name, args, _) <- scDefns ]
+      ++ [ (name, mkInitialPrimitiveMode name inst) | (name, inst) <- compiledPrimitives ]
+
+    cont
+      = [ Switch [ (1, [])
+                 , (2, [ Move 1 (Data 1)
+                       , Move 2 (Data 2)
+                       , Push (Code [ Print
+                                    , Push (Code cont)
+                                    , Enter (Arg 2)
+                                    ])
+                       , Enter (Arg 1)
+                       ])
+                 ]
+        ]
+
+    mkInitialScMode name args
+      = case args of
+          _ : _ -> Label name
+          _ -> Code [ Enter (Label name) ]
+    mkInitialPrimitiveMode name inst
+      = case inst of
+          UpdateMarkers n : _
+            | n > 0 -> Label name
+          _ -> Code [ Enter (Label name) ]
+#endif
+
+#if __CLH_EXERCISE_4__ >= 30
+data TimAddrMode
+  = Arg Int
+  | Label Name Int
+  | Code [Instruction]
+  | IntConst Int
+  | Data Int
+
+showArg _ (Arg n) = iStr "Arg " `iAppend` iNum n
+showArg d (Code inst) = iStr "Code " `iAppend` showInstructions d inst
+showArg _ (Label s _) = iStr "Label " `iAppend` iStr s
+showArg _ (IntConst n) = iStr "IntConst " `iAppend` iNum n
+showArg _ (Data n) = iStr "Data " `iAppend` iNum n
+
+compile program
+  = ( initialOutput
+    , [Enter mainLabel]
+    , initialFramePtr
+    , FrameNull
+    , initialArgStack
+    , initialValueStack
+    , initialDump
+    , initialHeap
+    , initialCStore
+    , statInitial
+    )
+  where
+    initialArgStack = [(cont, initialFramePtr)]
+    initialFramePtr = fst initialCStore
+    (initialHeap, initialCStore) = allocateInitialHeap compiledCode
+
+    compiledCode = compiledScDefns ++ compiledPrimitives
+    compiledScDefns = map (compileSc initialEnv) scDefns
+    scDefns = preludeDefs ++ program
+
+    mainLabel =
+      case aLookup initialEnv "main" (error "No definition for main is detected") of
+        Code [ Enter l ] -> l
+        l -> l
+    initialEnv
+      = map (\((n, f), s) -> (n, f s)) (zip initialEnvTemplate globalSlots)
+    initialEnvTemplate
+      = [ (name, mkInitialScMode name args) | (name, args, _) <- scDefns ]
+      ++ [ (name, mkInitialPrimitiveMode name inst) | (name, inst) <- compiledPrimitives ]
+
+    cont
+      = [ Switch [ (1, [])
+                 , (2, [ Move 1 (Data 1)
+                       , Move 2 (Data 2)
+                       , Push (Code [ Print
+                                    , Push (Code cont)
+                                    , Enter (Arg 2)
+                                    ])
+                       , Enter (Arg 1)
+                       ])
+                 ]
+        ]
+
+    mkInitialScMode name args slot
+      = case args of
+          _ : _ -> Label name slot
+          _ -> Code [ Enter (Label name slot) ]
+    mkInitialPrimitiveMode name inst slot
+      = case inst of
+          UpdateMarkers n : _
+            | n > 0 -> Label name slot
+          _ -> Code [ Enter (Label name slot) ]
+
+amToClosure (Arg n) fPtr _ heap _ = fGet heap fPtr n
+amToClosure (Code inst) fPtr _ _ _ = (inst, fPtr)
+amToClosure (Label _ n) _ _ heap (gFPtr, _) = fGet heap gFPtr n
+amToClosure (IntConst n) _ _ _ _ = (intCode, FrameInt n)
+amToClosure (Data n) _ fDPtr heap _ = fGet heap fDPtr n
+#endif
+#endif
+#endif
+#endif
 #endif
 #endif
 #endif
