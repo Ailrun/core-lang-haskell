@@ -153,7 +153,7 @@ initialDump :: TimDump
 initialDump = DummyTimDump
 #endif
 
-compiledPrimitives :: CodeStore
+compiledPrimitives :: [(Name, [Instruction])]
 #if __CLH_EXERCISE_4__ < 4
 compiledPrimitives = []
 #endif
@@ -1243,7 +1243,7 @@ mkUpdIndMode :: Int -> TimAddrMode
 mkUpdIndMode n = Code [PushMarker n, Enter (Arg n)]
 
 #if __CLH_EXERCISE_4__ >= 17
-#if __CLH_EXERCISE_4__ < 23
+#if __CLH_EXERCISE_4__ < 21
 compiledPrimitives
   = [ ("+", [ Take 2 2, Push (Code [ Push (Code [ Op Add, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
     , ("-", [ Take 2 2, Push (Code [ Push (Code [ Op Sub, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
@@ -1508,6 +1508,26 @@ step (inst@(UpdateMarkers n : inst'), fPtr, stack, vStack, dump, heap, cStore, s
     stackLength = length stack
 #endif
 
+#if __CLH_EXERCISE_4__ < 23
+compiledPrimitives
+  = [ ("+", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Add, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("-", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Sub, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("*", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Mul, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("/", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Div, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+
+    , ("negate", [ UpdateMarkers 1, Take 1 1, Push (Code [ Op Neg, Return ]), PushMarker 1, Enter (Arg 1) ])
+
+    , ("if", [ UpdateMarkers 3, Take 3 3, Push (Code [ Cond [PushMarker 2, Enter (Arg 2)] [PushMarker 3, Enter (Arg 3)] ]), PushMarker 1, Enter (Arg 1) ])
+
+    , (">", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Gt, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , (">=", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Ge, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("<", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Lt, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("<=", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Le, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("==", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Eq, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("~=", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Ne, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    ]
+#endif
+
 #if __CLH_EXERCISE_4__ < 22
 compileSc env (name, args, body)
   | d > 0 = (name, UpdateMarkers argsLength : Take d argsLength : instructions)
@@ -1769,26 +1789,26 @@ boolBinaryFunToIntBinaryFun f n1 n2
     else 1
 
 compiledPrimitives
-  = [ ("+", [ Take 2 2, Push (Code [ Push (Code [ Op Add, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
-    , ("-", [ Take 2 2, Push (Code [ Push (Code [ Op Sub, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
-    , ("*", [ Take 2 2, Push (Code [ Push (Code [ Op Mul, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
-    , ("/", [ Take 2 2, Push (Code [ Push (Code [ Op Div, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+  = [ ("+", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Add, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("-", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Sub, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("*", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Mul, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("/", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Div, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
 
-    , ("negate", [ Take 1 1, Push (Code [ Op Neg, Return ]), PushMarker 1, Enter (Arg 1) ])
+    , ("negate", [ UpdateMarkers 1, Take 1 1, Push (Code [ Op Neg, Return ]), PushMarker 1, Enter (Arg 1) ])
 
-    , (">", [ Take 2 2, Push (Code [ Push (Code [ Op Gt, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
-    , (">=", [ Take 2 2, Push (Code [ Push (Code [ Op Ge, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
-    , ("<", [ Take 2 2, Push (Code [ Push (Code [ Op Lt, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
-    , ("<=", [ Take 2 2, Push (Code [ Push (Code [ Op Le, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
-    , ("==", [ Take 2 2, Push (Code [ Push (Code [ Op Eq, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
-    , ("~=", [ Take 2 2, Push (Code [ Push (Code [ Op Ne, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , (">", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Gt, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , (">=", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Ge, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("<", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Lt, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("<=", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Le, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("==", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Eq, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
+    , ("~=", [ UpdateMarkers 2, Take 2 2, Push (Code [ Push (Code [ Op Ne, Return ]), PushMarker 1, Enter (Arg 1) ]), PushMarker 2, Enter (Arg 2) ])
 
     , ("cons", [ UpdateMarkers 2, Take 2 2, ReturnConstr 2 ])
     , ("nil", [ ReturnConstr 1 ])
 
     , ("true", [ ReturnConstr 2 ])
     , ("false", [ ReturnConstr 1 ])
-    , ("if", [ Take 3 3, Push (Code [ Switch [(2, [PushMarker 2, Enter (Arg 2)]), (1, [PushMarker 3, Enter (Arg 3)])] ]), PushMarker 1, Enter (Arg 1) ])
+    , ("if", [ UpdateMarkers 3, Take 3 3, Push (Code [ Switch [(2, [PushMarker 2, Enter (Arg 2)]), (1, [PushMarker 3, Enter (Arg 3)])] ]), PushMarker 1, Enter (Arg 1) ])
     ]
 
 #if __CLH_EXERCISE_4__ < 24
