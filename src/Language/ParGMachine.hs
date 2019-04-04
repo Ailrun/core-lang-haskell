@@ -13,7 +13,6 @@ import Data.ISeq
 import Language.Parser
 import Language.Prelude
 import Language.Types
-import Text.ParserCombinators.ReadP
 import Util
 
 parGMRun = putStrLn . run
@@ -76,7 +75,7 @@ type GmOutput = String
 type GmCode = [Instruction]
 data Instruction
   = Unwind
-  | PushGlobal Name
+  | PushGlobal GlobalMode
   | PushInt Int
   | Push Int
   | MkAp
@@ -100,6 +99,10 @@ data Instruction
   | Return
   | UpdateInt Int
   | UpdateBool Int
+  deriving (Show, Read, Eq)
+data GlobalMode
+  = GlobalLabel Name
+  | GlobalPack Int Int
   deriving (Show, Read, Eq)
 
 type GmStack = [Addr]
@@ -190,30 +193,21 @@ push n state = putStack (a : as) state
     as = getStack state
     a = as !! n
 
-pushGlobal :: Name -> GmState -> GmState
-pushGlobal name state
-  | shouldBeAdded = putHeap heap' (putGlobals globals' (putStack stack' state))
-  where
-    stack' = a : getStack state
-    globals' = (name, a) : getGlobals state
-    (heap', a) = hAlloc (getHeap state) (NGlobal arity [Pack tag arity, Update 0, Unwind])
-    ((tag, arity), _) : _ = parsedPack
-
-    shouldBeAdded = not (null parsedPack || globalExists)
-
-    globalExists = name `elem` aDomain (getGlobals state)
-    parsedPack = readP_to_S parsePack name
-    parsePack = do
-      _ <- string "Pack{"
-      tag <- readS_to_P (reads :: ReadS Int)
-      _ <- string ","
-      arity <- readS_to_P (reads :: ReadS Int)
-      _ <- string "}"
-      eof
-      return (tag, arity)
-pushGlobal name state = putStack (a : getStack state) state
+pushGlobal :: GlobalMode -> GmState -> GmState
+pushGlobal (GlobalLabel name) state
+  = putStack (a : getStack state) state
   where
     a = aLookup (getGlobals state) name (error ("Undeclared global " ++ name))
+pushGlobal (GlobalPack tag arity) state
+  | not globalExists = putHeap heap' (putGlobals globals' (putStack stack' state))
+  | otherwise = pushGlobal (GlobalLabel globalLabel) state
+  where
+    stack' = a : getStack state
+    globals' = (globalLabel, a) : getGlobals state
+    (heap', a) = hAlloc (getHeap state) (NGlobal arity [Pack tag arity, Update 0, Unwind])
+
+    globalExists = globalLabel `elem` aDomain (getGlobals state)
+    globalLabel = "Pack{" ++ show tag ++ "," ++ show arity ++ "}"
 
 pushInt :: Int -> GmState -> GmState
 pushInt n state
@@ -416,7 +410,7 @@ compile program
     (heap, globals) = buildInitialHeap program
 
 initialCode :: GmCode
-initialCode = [PushGlobal "main", Eval, Print]
+initialCode = [PushGlobal (GlobalLabel "main"), Eval, Print]
 
 buildInitialHeap :: CoreProgram -> (GmHeap, GmGlobals)
 buildInitialHeap program = mapAccumL allocateSc hInitial compiled
@@ -509,11 +503,11 @@ compileB e env = compileE e env ++ [Get]
 compileC :: GmCompiler
 compileC (EVar v) env
   | v `elem` aDomain env = [Push vInd]
-  | otherwise = [PushGlobal v]
+  | otherwise = [PushGlobal (GlobalLabel v)]
   where
     vInd = aLookup env v (error "Can't happen")
 compileC (ENum n) env = [PushInt n]
-compileC (EConstr tag arity) env = [PushGlobal ("Pack{" ++ show tag ++ "," ++ show arity ++ "}")]
+compileC (EConstr tag arity) env = [PushGlobal (GlobalPack tag arity)]
 compileC (EAp e1 e2) env = compileC e2 env ++ compileC e1 (argOffset 1 env) ++ [MkAp]
 compileC (ELet isRec defs e) env
   | isRec = compileLetRec compileC defs e env ++ [Slide (length defs)]
@@ -669,7 +663,7 @@ showInstructions is
 
 showInstruction :: Instruction -> ISeq
 showInstruction Unwind = iStr "Unwind"
-showInstruction (PushGlobal f) = iStr "PushGlobal " `iAppend` iStr f
+showInstruction (PushGlobal f) = iStr "PushGlobal " `iAppend` showGlobalMode f
 showInstruction (Push n) = iStr "Push " `iAppend` iNum n
 showInstruction (PushInt n) = iStr "PushInt " `iAppend` iNum n
 showInstruction MkAp = iStr "MkAp"
@@ -702,6 +696,11 @@ showInstruction MkInt = iStr "MkInt"
 showInstruction Get = iStr "Get"
 showInstruction Print = iStr "Print"
 showInstruction Return = iStr "Return"
+
+showGlobalMode :: GlobalMode -> ISeq
+showGlobalMode (GlobalLabel name) = iStr name
+showGlobalMode (GlobalPack tag arity)
+  = iConcat [ iStr "Pack{", iNum tag, iStr ",", iNum arity, iStr "}" ]
 
 showAlters :: Assoc Int GmCode -> ISeq
 showAlters alters
