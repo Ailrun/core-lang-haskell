@@ -147,6 +147,48 @@ This repository is about an implementation of a simple functional language based
 </p>
 </details>
 
+### Chapter 4
+
+<details>
+<summary>Exercises in Chapter 4</summary>
+<p>
+
+| Name          | Files                      |
+|---------------|----------------------------|
+| Exercise 4.1  | /src/Language/TIM.hs       |
+| Exercise 4.2  | /src/Language/TIM.hs       |
+| Exercise 4.3  | /src/Language/TIM.hs       |
+| Exercise 4.4  | /src/Language/TIM.hs       |
+| Exercise 4.5  | /src/Language/TIM.hs       |
+| Exercise 4.6  | /src/Language/TIM.hs       |
+| Exercise 4.7  | /src/Language/TIM.hs       |
+| Exercise 4.8  | /src/Language/TIM.hs       |
+| Exercise 4.9  | /exercises/exercise4-09.md |
+| Exercise 4.10 | /exercises/exercise4-10.md |
+| Exercise 4.11 | /src/Language/TIM.hs       |
+| Exercise 4.12 | /exercises/exercise4-12.md |
+| Exercise 4.13 | /src/Language/TIM.hs       |
+| Exercise 4.14 | /src/Language/TIM.hs       |
+| Exercise 4.15 | /src/Language/TIM.hs       |
+| Exercise 4.16 | /src/Language/TIM.hs       |
+| Exercise 4.17 | /src/Language/TIM.hs       |
+| Exercise 4.18 | /src/Language/TIM.hs       |
+| Exercise 4.19 | /src/Language/TIM.hs       |
+| Exercise 4.20 | /src/Language/TIM.hs       |
+| Exercise 4.21 | /src/Language/TIM.hs       |
+| Exercise 4.22 | /src/Language/TIM.hs       |
+| Exercise 4.23 | /src/Language/TIM.hs       |
+| Exercise 4.24 | /src/Language/TIM.hs       |
+| Exercise 4.25 | /src/Language/TIM.hs       |
+| Exercise 4.26 | /src/Language/TIM.hs       |
+| Exercise 4.27 | /src/Language/TIM.hs       |
+| Exercise 4.28 | /src/Language/TIM.hs       |
+| Exercise 4.29 | /src/Language/TIM.hs       |
+| Exercise 4.30 | /src/Language/TIM.hs       |
+
+</p>
+</details>
+
 ## References
 
 <span id="reference-1">[Simon\[1\]](#text-1): Simon L Peyton Jones, David R Lester. January 1992. _Implementing functional languages: a tutorial_. Prentice Hall</span>
