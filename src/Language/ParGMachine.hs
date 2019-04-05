@@ -2,12 +2,19 @@
 module Language.ParGMachine
   ( parGMRun
   , run
-  , showResults
+#if __CLH_EXERCISE_5__ >= 2
   , eval
+#if __CLH_EXERCISE_5__ >= 3
   , compile
+#if __CLH_EXERCISE_5__ >= 5
+  , showResults
+#endif
+#endif
+#endif
   )
 where
 
+import Control.Arrow
 import Data.List
 import Data.ISeq
 import Language.Parser
@@ -18,61 +25,53 @@ import Util
 parGMRun = putStrLn . run
 
 run :: String -> String
+#if __CLH_EXERCISE_5__ >= 5
 run = showResults . eval . compile . parse
+#else
+run = undefined
+#endif
 
-getOutput :: GmState -> GmOutput
-putOutput :: GmOutput -> GmState -> GmState
+#if __CLH_EXERCISE_5__ >= 1
+type PgmState = (PgmGlobalState, [PgmLocalState])
 
-getCode :: GmState -> GmCode
-putCode :: GmCode -> GmState -> GmState
-
-getStack :: GmState -> GmStack
-putStack :: GmStack -> GmState -> GmState
-
-getDump :: GmState -> GmDump
-putDump :: GmDump -> GmState -> GmState
-
-getVStack :: GmState -> GmVStack
-putVStack :: GmVStack -> GmState -> GmState
-
-getHeap :: GmState -> GmHeap
-putHeap :: GmHeap -> GmState -> GmState
-
-getGlobals :: GmState -> GmGlobals
-putGlobals :: GmGlobals -> GmState -> GmState
-
-getStats :: GmState -> GmStats
-putStats :: GmStats -> GmState -> GmState
-
-type GmState = (GmOutput, GmCode, GmStack, GmDump, GmVStack, GmHeap, GmGlobals, GmStats)
-
-getOutput (output, _, _, _, _, _, _, _) = output
-putOutput output (_, code, stack, dump, vStack, heap, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
-
-getCode (_, code, _, _, _, _, _, _) = code
-putCode code (output, _, stack, dump, vStack, heap, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
-
-getStack (_, _, stack, _, _, _, _, _) = stack
-putStack stack (output, code, _, dump, vStack, heap, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
-
-getDump (_, _, _, dump, _, _, _, _) = dump
-putDump dump (output, code, stack, _, vStack, heap, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
-
-getVStack (_, _, _, _, vStack, _, _, _) = vStack
-putVStack vStack (output, code, stack, dump, _, heap, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
-
-getHeap (_, _, _, _, _, heap, _, _) = heap
-putHeap heap (output, code, stack, dump, vStack, _, globals, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
-
-getGlobals (_, _, _, _, _, _, globals, _) = globals
-putGlobals globals (output, code, stack, dump, vStack, heap, _, stats) = (output, code, stack, dump, vStack, heap, globals, stats)
-
-getStats (_, _, _, _, _, _, _, stats) = stats
-putStats stats (output, code, stack, dump, vStack, heap, globals, _) = (output, code, stack, dump, vStack, heap, globals, stats)
+type PgmGlobalState = (GmOutput, GmHeap, GmGlobals, GmSparks, GmStats)
 
 type GmOutput = String
 
+pgmGetOutput :: PgmState -> GmOutput
+pgmGetOutput ((output, _, _, _, _), _) = output
+
+type GmHeap = Heap Node
+data Node
+  = NNum Int
+  | NAp Addr Addr
+  | NGlobal Int GmCode
+  | NInd Addr
+  | NConstr Int [Addr]
+  deriving (Show, Read, Eq)
+
+pgmGetHeap :: PgmState -> GmHeap
+pgmGetHeap ((_, heap, _, _, _), _) = heap
+
+type GmGlobals = Assoc Name Addr
+
+pgmGetGlobals :: PgmState -> GmGlobals
+pgmGetGlobals ((_, _, globals, _, _), _) = globals
+
+type GmSparks = [Addr]
+
+pgmGetSparks :: PgmState -> GmSparks
+pgmGetSparks ((_, _, _, sparks, _), _) = sparks
+
+type GmStats = [Int]
+
+pgmGetStats :: PgmState -> GmStats
+pgmGetStats ((_, _, _, _, stats), _) = stats
+
+type PgmLocalState = (GmCode, GmStack, GmDump, GmVStack, GmClock)
+
 type GmCode = [Instruction]
+#if __CLH_EXERCISE_5__ < 2
 data Instruction
   = Push Int
   | PushGlobal GlobalMode
@@ -100,6 +99,7 @@ data Instruction
   | Unwind
   | Print
   deriving (Show, Read, Eq)
+#endif
 data GlobalMode
   = GlobalLabel Name
   | GlobalPack Int Int
@@ -112,45 +112,128 @@ type GmDumpItem = (GmCode, GmStack, GmVStack)
 
 type GmVStack = [Int]
 
-type GmHeap = Heap Node
-data Node
-  = NNum Int
-  | NAp Addr Addr
-  | NGlobal Int GmCode
-  | NInd Addr
-  | NConstr Int [Addr]
-  deriving (Show, Read, Eq)
+type GmClock = Int
 
-type GmGlobals = Assoc Name Addr
+type GmState = (PgmGlobalState, PgmLocalState)
 
-statInitial :: GmStats
-statIncSteps :: GmStats -> GmStats
-statGetSteps :: GmStats -> Int
+putOutput :: GmOutput -> GmState -> GmState
+putHeap :: GmHeap -> GmState -> GmState
+putGlobals :: GmGlobals -> GmState -> GmState
+putSparks :: GmSparks -> GmState -> GmState
+putStats :: GmStats -> GmState -> GmState
 
-type GmStats = Int
+getOutput :: GmState -> GmOutput
+getHeap :: GmState -> GmHeap
+getGlobals :: GmState -> GmGlobals
+getSparks :: GmState -> GmSparks
+getStats :: GmState -> GmStats
 
-statInitial = 0
-statIncSteps s = s + 1
-statGetSteps s = s
+putCode :: GmCode -> GmState -> GmState
+putStack :: GmStack -> GmState -> GmState
+putDump :: GmDump -> GmState -> GmState
+putVStack :: GmVStack -> GmState -> GmState
+putClock :: GmClock -> GmState -> GmState
 
-eval :: GmState -> [GmState]
+getCode :: GmState -> GmCode
+getStack :: GmState -> GmStack
+getDump :: GmState -> GmDump
+getVStack :: GmState -> GmVStack
+getClock :: GmState -> GmClock
+
+putOutput output ((_, heap, globals, sparks, stats), locals) = ((output, heap, globals, sparks, stats), locals)
+putHeap heap ((output, _, globals, sparks, stats), locals) = ((output, heap, globals, sparks, stats), locals)
+putGlobals globals ((output, heap, _, sparks, stats), locals) = ((output, heap, globals, sparks, stats), locals)
+putSparks sparks ((output, heap, globals, _, stats), locals) = ((output, heap, globals, sparks, stats), locals)
+putStats stats ((output, heap, globals, sparks, _), locals) = ((output, heap, globals, sparks, stats), locals)
+
+getOutput ((output, _, _, _, _), _) = output
+getHeap ((_, heap, _, _, _), _) = heap
+getGlobals ((_, _, globals, _, _), _) = globals
+getSparks ((_, _, _, sparks, _), _) = sparks
+getStats ((_, _, _, _, stats), _) = stats
+
+putCode code (global, (_, stack, dump, vStack, clock)) = (global, (code, stack, dump, vStack, clock))
+putStack stack (global, (code, _, dump, vStack, clock)) = (global, (code, stack, dump, vStack, clock))
+putDump dump (global, (code, stack, _, vStack, clock)) = (global, (code, stack, dump, vStack, clock))
+putVStack vStack (global, (code, stack, dump, _, clock)) = (global, (code, stack, dump, vStack, clock))
+putClock clock (global, (code, stack, dump, vStack, _)) = (global, (code, stack, dump, vStack, clock))
+
+getCode (_, (code, _, _, _, _)) = code
+getStack (_, (_, stack, _, _, _)) = stack
+getDump (_, (_, _, dump, _, _)) =  dump
+getVStack (_, (_, _, _, vStack, _)) = vStack
+getClock (_, (_, _, _, _, clock)) = clock
+
+#if __CLH_EXERCISE_5__ >= 2
+eval :: PgmState -> [PgmState]
 eval state = state : restStates
   where
     restStates
       | gmFinal state = []
-      | otherwise = eval nextState
-    nextState = doAdmin (step state)
+      | otherwise = eval (doAdmin (steps state))
 
-doAdmin :: GmState -> GmState
-doAdmin s = putStats (statIncSteps (getStats s)) s
+steps :: PgmState -> PgmState
+steps state
+  = mapAccumL step global' locals'
+  where
+    ((output, heap, globals, sparks, stats), locals) = state
+    newTasks = [ makeTask s | s <- sparks ]
+    global' = (output, heap, globals, [], stats)
+    locals' = map tick (locals ++ newTasks)
 
-gmFinal :: GmState -> Bool
-gmFinal = null . getCode
+makeTask :: Addr -> PgmLocalState
+makeTask addr = ([Eval], [addr], [], [], 0)
 
-step :: GmState -> GmState
-step state = dispatch i (putCode is state)
+tick :: PgmLocalState -> PgmLocalState
+tick (code, stack, dump, vStack, clock) = (code, stack, dump, vStack, clock + 1)
+
+gmFinal :: PgmState -> Bool
+gmFinal = (uncurry (&&)) . (null . snd &&& null . pgmGetSparks)
+
+step :: PgmGlobalState -> PgmLocalState -> GmState
+step global locals = dispatch i (putCode is state)
   where
     i : is = getCode state
+    state = (global, locals)
+
+doAdmin :: PgmState -> PgmState
+doAdmin ((output, heap, globals, sparks, stats), locals)
+  = ((output, heap, globals, sparks, stats'), locals')
+  where
+    (locals', stats') = foldr makeNewLocalAndStats ([], stats) locals
+
+    makeNewLocalAndStats local@(code, _, _, _, clock) (localsAcc, statsAcc)
+      | null code = (localsAcc, clock : statsAcc)
+      | otherwise = (local : localsAcc, statsAcc)
+
+data Instruction
+  = Push Int
+  | PushGlobal GlobalMode
+  | PushInt Int
+  | PushBasic Int
+  | Pop Int
+  | Slide Int
+  | Update Int
+  | UpdateInt Int
+  | UpdateBool Int
+  | Alloc Int
+  | Pack Int Int
+  | Split Int
+  | CaseJump (Assoc Int GmCode)
+  | Cond GmCode GmCode
+  | MkAp
+  | MkInt
+  | MkBool
+  | Get
+  | Add | Sub | Mul | Div
+  | Neg
+  | Eq | Ne | Lt | Le | Gt | Ge
+  | Eval
+  | Return
+  | Unwind
+  | Par
+  | Print
+  deriving (Show, Read, Eq)
 
 dispatch :: Instruction -> GmState -> GmState
 dispatch (Push n) = push n
@@ -185,6 +268,7 @@ dispatch Ge = dyadicBoolOp (>=)
 dispatch Eval = evalInstruction
 dispatch Return = returnInstruction
 dispatch Unwind = unwind
+dispatch Par = parInstruction
 dispatch Print = printInstruction
 
 push :: Int -> GmState -> GmState
@@ -390,6 +474,11 @@ rearrange n heap as
 getArg :: Node -> Addr
 getArg (NAp a1 a2) = a2
 
+parInstruction :: GmState -> GmState
+parInstruction state = putSparks (a : getSparks state) (putStack stack' state)
+  where
+    a : stack' = getStack state
+
 printInstruction :: GmState -> GmState
 printInstruction state =
   case node of
@@ -403,14 +492,19 @@ printInstruction state =
     node = hLookup (getHeap state) a
     a : as = getStack state
 
-compile :: CoreProgram -> GmState
+#if __CLH_EXERCISE_5__ >= 3
+compile :: CoreProgram -> PgmState
 compile program
-  = ([], initialCode, [], [], [], heap, globals, statInitial)
+  = (([], heap, globals, [], []), [initialTask addr])
   where
+    addr = aLookup globals "main" (error "main is not defined")
     (heap, globals) = buildInitialHeap program
 
+initialTask :: Addr -> PgmLocalState
+initialTask addr = (initialCode, [addr], [], [], 0)
+
 initialCode :: GmCode
-initialCode = [PushGlobal (GlobalLabel "main"), Eval, Print]
+initialCode = [Eval, Print]
 
 buildInitialHeap :: CoreProgram -> (GmHeap, GmGlobals)
 buildInitialHeap program = mapAccumL allocateSc hInitial compiled
@@ -433,8 +527,8 @@ primitives
     , ("if", ["c", "t", "f"], EAp (EAp (EAp (EVar "if") (EVar "c")) (EVar "t")) (EVar "f"))
     , ("True", [], EConstr 2 0)
     , ("False", [], EConstr 1 0)
+    , ("par", ["x", "y"], EAp (EAp (EVar "par") (EVar "x")) (EVar "y"))
     ]
-
 
 type GmCompiledSc = (Name, Int, GmCode)
 
@@ -455,6 +549,12 @@ compileR (ELet isRec defs e) env
   | otherwise = compileLet compileR defs e env
 compileR (EAp (EAp (EAp (EVar "if") e1) e2) e3) env
   = compileB e1 env ++ [Cond (compileR e2 env) (compileR e3 env)]
+compileR (EAp (EAp (EVar "par") e1) e2) env
+  = compileC e2 env ++ [Push 0, Par]
+  ++ compileC e1 (argOffset 1 env)
+  ++ [MkAp, Update envLength, Pop envLength, Unwind]
+  where
+    envLength = length env
 compileR (ECase e alters) env
   = compileE e env ++ [CaseJump (compileAlters compileR' alters env)]
 compileR (ENum n) env = [PushBasic n, UpdateInt (length env), Return]
@@ -481,6 +581,10 @@ compileE e@(EAp (EAp (EVar name) _) _) env
 compileE e@(EAp (EVar "negate") _) env = compileB e env ++ [MkInt]
 compileE (EAp (EAp (EAp (EVar "if") e1) e2) e3) env
   = compileB e1 env ++ [Cond (compileE e2 env) (compileE e3 env)]
+compileE (EAp (EAp (EVar "par") e1) e2) env
+  = compileC e2 env ++ [Push 0, Par]
+  ++ compileC e1 (argOffset 1 env)
+  ++ [MkAp, Eval]
 compileE e env = compileC e env ++ [Eval]
 
 compileE' :: Int -> GmCompiler
@@ -559,12 +663,20 @@ builtInDyadicInt = [ ("+", Add), ("-", Sub), ("*", Mul), ("/", Div) ]
 builtInDyadicBool :: Assoc Name Instruction
 builtInDyadicBool = [ ("==", Eq), ("~=", Ne), ("<", Lt), ("<=", Le), (">", Gt), (">=", Ge) ]
 
+#if __CLH_EXERCISE_5__ >= 5
+showResults :: [PgmState] -> String
+showSc :: PgmState -> (Name, Addr) -> ISeq
+showState :: PgmState -> ISeq
+showStats :: PgmState -> ISeq
+showOutput :: PgmState -> ISeq
+showSparks :: PgmState -> ISeq
+
 showResults states
   = iDisplay resultSeq
   where
     resultSeq
       = iConcat [ iStr "Supercombinator definitions", iNewline
-                , iInterleave iNewline (map (showSc state) (getGlobals state)), iNewline
+                , iInterleave iNewline (map (showSc state) (pgmGetGlobals state)), iNewline
                 , iNewline
                 , iStr "State transitions", iNewline
                 , iNewline
@@ -573,27 +685,45 @@ showResults states
                 , showStats (last states)
                 ]
 
-    state : _ = states
+    state = head states
 
-showSc :: GmState -> (Name, Addr) -> ISeq
 showSc state (name, addr)
   = iConcat [ iStr "Code for ", iStr name, iNewline
             , showInstructions code, iNewline
             ]
     where
-      (NGlobal _ code) = hLookup (getHeap state) addr
+      (NGlobal _ code) = hLookup (pgmGetHeap state) addr
 
-showState :: GmState -> ISeq
 showState state
   = iConcat [ showOutput state, iNewline
-            , showStack state, iNewline
-            , showDump state, iNewline
-            , showVStack state, iNewline
-            , showInstructions (getCode state), iNewline
+            , showSparks state, iNewline
+            , showTasks state, iNewline
             ]
 
-showOutput :: GmState -> ISeq
-showOutput state = iConcat [ iStr "  Output: \"", iStr (getOutput state), iStr "\"" ]
+showOutput state
+  = iConcat [ iStr "  Output: \"", iStr (pgmGetOutput state), iStr "\"" ]
+
+showSparks state
+  = iConcat [ iStr "  Spark:  [ ", iInterleave (iStr ", ") (map (iStr . showAddr) (pgmGetSparks state)), iStr " ]" ]
+
+showTasks :: PgmState -> ISeq
+showTasks (global, locals)
+  = iConcat [ iStr "  Tasks:  { ", iIndent (iInterleave iNewline (map showTask tasks)), iStr " }" ]
+  where
+    tasks = map ((,) global) locals
+
+showTask :: GmState -> ISeq
+showTask task
+  = iConcat [ iStr "< "
+            , iIndent
+              ( iConcat [ showStack task, iNewline
+                        , showDump task, iNewline
+                        , showVStack task, iNewline
+                        , showInstructions (getCode task)
+                        ]
+              )
+            , iStr " >"
+            ]
 
 showStack :: GmState -> ISeq
 showStack state
@@ -652,14 +782,9 @@ showVStack :: GmState -> ISeq
 showVStack state
   = iConcat [ iStr "  VStack: [ ", iInterleave (iStr ",") (map iNum (getVStack state)), iStr " ]" ]
 
-showStats :: GmState -> ISeq
-showStats state
-  = iConcat [ iStr "Steps taken = ", iNum (statGetSteps (getStats state)) ]
-
 showInstructions :: GmCode -> ISeq
 showInstructions is
-  = iConcat [ iStr "  Code:   { ", iIndent (iInterleave iNewline (map showInstruction is)), iStr " }", iNewline
-            ]
+  = iConcat [ iStr "  Code:   { ", iIndent (iInterleave iNewline (map showInstruction is)), iStr " }" ]
 
 showInstruction :: Instruction -> ISeq
 showInstruction (Push n) = iStr "Push " `iAppend` iNum n
@@ -695,6 +820,7 @@ showInstruction Ge = iStr "Ge"
 showInstruction Eval = iStr "Eval"
 showInstruction Return = iStr "Return"
 showInstruction Unwind = iStr "Unwind"
+showInstruction Par = iStr "Par"
 showInstruction Print = iStr "Print"
 
 showGlobalMode :: GlobalMode -> ISeq
@@ -709,3 +835,10 @@ showAlters alters
 showAlter :: (Int, GmCode) -> ISeq
 showAlter (tag, code)
   = iConcat [ iNum tag, iStr " -> [ ", iIndent (iInterleave iNewline (map showInstruction code)), iStr " ]" ]
+
+showStats state
+  = iConcat [ iStr "Clocks taken = ", iInterleave (iStr ", ") (map iNum (pgmGetStats state)) ]
+#endif
+#endif
+#endif
+#endif

@@ -189,6 +189,25 @@ This repository is about an implementation of a simple functional language based
 </p>
 </details>
 
+### Chapter 5
+
+<details>
+<summary>Exercises in Chapter 5</summary>
+<p>
+
+| Name         | Files                        |
+|--------------|------------------------------|
+| Exercise 5.1 | /src/Language/ParGMachine.hs |
+| Exercise 5.2 | /src/Language/ParGMachine.hs |
+| Exercise 5.3 | /src/Language/ParGMachine.hs |
+| Exercise 5.4 | /exercises/exercise5-04.md   |
+| Exercise 5.5 | /src/Language/ParGMachine.hs |
+| Exercise 5.6 | /exercises/exercise5-06.md   |
+| Exercise 5.7 | /exercises/exercise5-07.md   |
+
+</p>
+</details>
+
 ## References
 
 <span id="reference-1">[Simon\[1\]](#text-1): Simon L Peyton Jones, David R Lester. January 1992. _Implementing functional languages: a tutorial_. Prentice Hall</span>
