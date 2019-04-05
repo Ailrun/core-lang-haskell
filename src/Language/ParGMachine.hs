@@ -737,11 +737,11 @@ showStackItem state addr
 
 showNode :: GmState -> Addr -> Node -> ISeq
 showNode state addr (NNum n) = iNum n
+showNode state addr (NAp a1 a2)
+  = iConcat [ iStr "Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2) ]
 showNode state addr (NGlobal _ _) = iStr "Global " `iAppend` iStr gName
   where
     gName = head [ name | (name, addr') <- getGlobals state, addr == addr' ]
-showNode state addr (NAp a1 a2)
-  = iConcat [ iStr "Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2) ]
 showNode state addr (NInd a)
   = iConcat [ iStr "Ind ", iStr (showAddr a) ]
 showNode state addr (NConstr t as)
