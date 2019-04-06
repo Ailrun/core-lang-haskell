@@ -42,6 +42,7 @@ pgmGetOutput :: PgmState -> GmOutput
 pgmGetOutput ((output, _, _, _, _), _) = output
 
 type GmHeap = Heap Node
+#if __CLH_EXERCISE_5__ < 8
 data Node
   = NNum Int
   | NAp Addr Addr
@@ -49,6 +50,7 @@ data Node
   | NInd Addr
   | NConstr Int [Addr]
   deriving (Show, Read, Eq)
+#endif
 
 pgmGetHeap :: PgmState -> GmHeap
 pgmGetHeap ((_, heap, _, _, _), _) = heap
@@ -318,11 +320,13 @@ slide n state = putStack (a : drop n as) state
     a : as = getStack state
 
 update :: Int -> GmState -> GmState
+#if __CLH_EXERCISE_5__ < 9
 update n state = putStack stack' (putHeap heap' state)
   where
     heap' = hUpdate (getHeap state) rA (NInd a)
     rA = stack' !! n
     a : stack' = getStack state
+#endif
 
 updateInt :: Int -> GmState -> GmState
 updateInt n state = putVStack vStack' (putHeap heap' state)
@@ -444,6 +448,7 @@ returnInstruction state
     (code', as, vStack') : dump' = getDump state
 
 unwind :: GmState -> GmState
+#if __CLH_EXERCISE_5__ < 9
 unwind state = newState (hLookup heap a)
   where
     stack@(a : as) = getStack state
@@ -464,6 +469,7 @@ unwind state = newState (hLookup heap a)
       case getDump state of
         (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
         _ -> state
+#endif
 
 rearrange :: Int -> GmHeap -> GmStack -> GmStack
 rearrange n heap as
@@ -472,7 +478,9 @@ rearrange n heap as
     as' = map (getArg . hLookup heap) (tail as)
 
 getArg :: Node -> Addr
+#if __CLH_EXERCISE_5__ < 9
 getArg (NAp a1 a2) = a2
+#endif
 
 parInstruction :: GmState -> GmState
 parInstruction state = putSparks (a : getSparks state) (putStack stack' state)
@@ -735,6 +743,7 @@ showStackItem state addr
   = iConcat [ iStr (showAddr addr), iStr ": ", showNode state addr (hLookup (getHeap state) addr)
             ]
 
+#if __CLH_EXERCISE_5__ < 8
 showNode :: GmState -> Addr -> Node -> ISeq
 showNode state addr (NNum n) = iNum n
 showNode state addr (NAp a1 a2)
@@ -746,6 +755,7 @@ showNode state addr (NInd a)
   = iConcat [ iStr "Ind ", iStr (showAddr a) ]
 showNode state addr (NConstr t as)
   = iConcat [ iStr "Constr ", iNum t, iStr " [", iInterleave (iStr ", ") (map (iStr . showAddr) as), iStr "]" ]
+#endif
 
 showDump :: GmState -> ISeq
 showDump state
@@ -838,6 +848,93 @@ showAlter (tag, code)
 
 showStats state
   = iConcat [ iStr "Clocks taken = ", iInterleave (iStr ", ") (map iNum (pgmGetStats state)) ]
+
+#if __CLH_EXERCISE_5__ >= 8
+data Node
+  = NNum Int
+  | NAp Addr Addr
+  | NGlobal Int GmCode
+  | NInd Addr
+  | NConstr Int [Addr]
+  | NLAp Addr Addr
+  | NLGlobal Int GmCode
+  deriving (Show, Read, Eq)
+
+showNode :: GmState -> Addr -> Node -> ISeq
+showNode state addr (NNum n) = iNum n
+showNode state addr (NAp a1 a2)
+  = iConcat [ iStr "Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2) ]
+showNode state addr (NGlobal _ _) = iStr "Global " `iAppend` iStr gName
+  where
+    gName = head [ name | (name, addr') <- getGlobals state, addr == addr' ]
+showNode state addr (NInd a)
+  = iConcat [ iStr "Ind ", iStr (showAddr a) ]
+showNode state addr (NConstr t as)
+  = iConcat [ iStr "Constr ", iNum t, iStr " [", iInterleave (iStr ", ") (map (iStr . showAddr) as), iStr "]" ]
+showNode state addr (NLAp a1 a2)
+  = iConcat [ iStr "*Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2) ]
+showNode state addr (NLGlobal _ _) = iStr "*Global " `iAppend` iStr gName
+  where
+    gName = head [ name | (name, addr') <- getGlobals state, addr == addr' ]
+
+#if __CLH_EXERCISE_5__ >= 9
+lock :: Addr -> GmState -> GmState
+lock addr state
+  = putHeap (newHeap (hLookup heap addr)) state
+  where
+    heap = getHeap state
+
+    newHeap (NAp a1 a2) = hUpdate heap addr (NLAp a1 a2)
+    newHeap (NGlobal n c)
+      | n == 0 = hUpdate heap addr (NLGlobal n c)
+      | otherwise = heap
+
+unlock :: Addr -> GmState -> GmState
+unlock addr state
+  = newState (hLookup heap addr)
+  where
+    heap = getHeap state
+    newState (NLAp a1 a2)
+      = unlock a1 (putHeap (hUpdate heap addr (NAp a1 a2)) state)
+    newState (NLGlobal n c)
+      = putHeap (hUpdate heap addr (NGlobal n c)) state
+    newState _ = state
+
+update n state = putStack stack' (putHeap heap' unlockedState)
+  where
+    heap' = hUpdate (getHeap unlockedState) rA (NInd a)
+    unlockedState = unlock rA state
+    rA = stack' !! n
+    a : stack' = getStack state
+
+unwind state = newState (hLookup heap a)
+  where
+    stack@(a : as) = getStack state
+    lockedState = lock a state
+    heap = getHeap state
+    newState (NNum n) =
+      case getDump state of
+        (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
+        _ -> state
+    newState (NAp a1 a2) = putCode [Unwind] (putStack (a1 : stack) lockedState)
+    newState (NGlobal n c)
+      | length as < n =
+        case getDump state of
+          (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (last stack : as') (putVStack vs' state)))
+          _ -> error "Unwinding with too few arguments"
+      | otherwise = putCode c (putStack (rearrange n heap stack) lockedState)
+    newState (NInd a') = putCode [Unwind] (putStack (a' : as) state)
+    newState (NConstr _ _) =
+      case getDump state of
+        (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
+        _ -> state
+    newState (NLAp _ _) = putCode [Unwind] state
+    newState (NLGlobal _ _) = putCode [Unwind] state
+
+getArg (NAp a1 a2) = a2
+getArg (NLAp a1 a2) = a2
+#endif
+#endif
 #endif
 #endif
 #endif

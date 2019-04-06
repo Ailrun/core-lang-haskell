@@ -195,15 +195,20 @@ This repository is about an implementation of a simple functional language based
 <summary>Exercises in Chapter 5</summary>
 <p>
 
-| Name         | Files                        |
-|--------------|------------------------------|
-| Exercise 5.1 | /src/Language/ParGMachine.hs |
-| Exercise 5.2 | /src/Language/ParGMachine.hs |
-| Exercise 5.3 | /src/Language/ParGMachine.hs |
-| Exercise 5.4 | /exercises/exercise5-04.md   |
-| Exercise 5.5 | /src/Language/ParGMachine.hs |
-| Exercise 5.6 | /exercises/exercise5-06.md   |
-| Exercise 5.7 | /exercises/exercise5-07.md   |
+| Name          | Files                        |
+|---------------|------------------------------|
+| Exercise 5.1  | /src/Language/ParGMachine.hs |
+| Exercise 5.2  | /src/Language/ParGMachine.hs |
+| Exercise 5.3  | /src/Language/ParGMachine.hs |
+| Exercise 5.4  | /exercises/exercise5-04.md   |
+| Exercise 5.5  | /src/Language/ParGMachine.hs |
+| Exercise 5.6  | /exercises/exercise5-06.md   |
+| Exercise 5.7  | /exercises/exercise5-07.md   |
+| Exercise 5.8  | /src/Language/ParGMachine.hs |
+| Exercise 5.9  | /src/Language/ParGMachine.hs |
+| Exercise 5.10 | /exercises/exercise5-10.md   |
+| Exercise 5.11 | /exercises/exercise5-11.md   |
+| Exercise 5.12 | /exercises/exercise5-12.md   |
 
 </p>
 </details>
