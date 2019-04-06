@@ -714,7 +714,7 @@ showOutput state
   = iConcat [ iStr "  Output: \"", iStr (pgmGetOutput state), iStr "\"" ]
 
 showSparks state
-  = iConcat [ iStr "  Spark:  [ ", iInterleave (iStr ", ") (map (iStr . showAddr) (pgmGetSparks state)), iStr " ]" ]
+  = iConcat [ iStr "  Sparks: [ ", iInterleave (iStr ", ") (map (iStr . showAddr) (pgmGetSparks state)), iStr " ]" ]
 
 showTasks :: PgmState -> ISeq
 showTasks (global, locals)
