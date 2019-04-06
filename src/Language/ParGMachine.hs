@@ -175,6 +175,7 @@ eval state = state : restStates
       | otherwise = eval (doAdmin (steps state))
 
 steps :: PgmState -> PgmState
+#if __CLH_EXERCISE_5__ < 13
 steps state
   = mapAccumL step global' locals'
   where
@@ -182,6 +183,7 @@ steps state
     newTasks = [ makeTask s | s <- sparks ]
     global' = (output, heap, globals, [], stats)
     locals' = map tick (locals ++ newTasks)
+#endif
 
 makeTask :: Addr -> PgmLocalState
 makeTask addr = ([Eval], [addr], [], [], 0)
@@ -933,6 +935,102 @@ unwind state = newState (hLookup heap a)
 
 getArg (NAp a1 a2) = a2
 getArg (NLAp a1 a2) = a2
+
+#if __CLH_EXERCISE_5__ >= 13
+machineSize :: Int
+machineSize = 4
+
+#if __CLH_EXERCISE_5__ < 14
+steps state
+  = scheduler global' locals'
+  where
+    ((output, heap, globals, sparks, stats), locals) = state
+    newTasks = [ makeTask s | s <- sparks ]
+    global' = (output, heap, globals, [], stats)
+    locals' = locals ++ newTasks
+#endif
+
+scheduler :: PgmGlobalState -> [PgmLocalState] -> PgmState
+#if __CLH_EXERCISE_5__ < 15
+#if __CLH_EXERCISE_5__ == 13
+scheduler global tasks
+  = (global', tasks' ++ nonRunning)
+  where
+    running = map tick (take machineSize tasks)
+    nonRunning = drop machineSize tasks
+    (global', tasks') = mapAccumL step global running
+#else
+scheduler global tasks
+  = (global', nonRunning ++ tasks')
+  where
+    running = map tick (take machineSize tasks)
+    nonRunning = drop machineSize tasks
+    (global', tasks') = mapAccumL step global running
+#endif
+#endif
+
+#if __CLH_EXERCISE_5__ >= 14
+steps state
+  = scheduler global' locals'
+  where
+    ((output, heap, globals, sparks, stats), locals) = state
+    newTasks = map makeTask . take (machineSize - length locals) $ sparks
+    global' = (output, heap, globals, [], stats)
+    locals' = locals ++ newTasks
+
+#if __CLH_EXERCISE_5__ >= 15
+scheduler global tasks
+  = (global', nonRunning ++ tasks')
+  where
+    (global', tasks') = mapAccumL step global (map tick running)
+    (running, nonRunning) = spanN machineSize (isProceedableTask global) tasks
+
+spanN :: Int -> (a -> Bool) -> [a] -> ([a], [a])
+spanN n f l = go n l
+  where
+    go _ [] = ([], [])
+    go 0 as = ([], as)
+    go m (a : as)
+      = if f a
+        then first (a :) (go (m - 1) as)
+        else second (a :) (go m as)
+
+isProceedableTask :: PgmGlobalState -> PgmLocalState -> Bool
+isProceedableTask global task
+  = case code of
+      [Eval] -> isReducibleNode state node
+      [Unwind] -> not (isLockedNode state node)
+      _ -> True
+  where
+    code = getCode state
+    node = hLookup (getHeap state) addr
+    addr = head (getStack state)
+    state = (global, task)
+
+isReducibleNode :: GmState -> Node -> Bool
+isReducibleNode state node
+  = case node of
+      NNum _ -> False
+      NAp _ _ -> True
+      NGlobal _ _ -> True
+      NInd _ -> True
+      NConstr _ _ -> False
+      NLAp _ _ -> True
+      NLGlobal _ _ -> True
+
+isLockedNode :: GmState -> Node -> Bool
+isLockedNode state node
+  = case node of
+      NNum _ -> False
+      NAp _ _ -> False
+      NGlobal _ _ -> False
+      NInd _ -> False
+      NConstr _ _ -> False
+      NLAp _ _ -> True
+      NLGlobal _ _ -> True
+#endif
+#endif
+#endif
 #endif
 #endif
 #endif

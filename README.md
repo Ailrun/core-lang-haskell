@@ -209,6 +209,10 @@ This repository is about an implementation of a simple functional language based
 | Exercise 5.10 | /exercises/exercise5-10.md   |
 | Exercise 5.11 | /exercises/exercise5-11.md   |
 | Exercise 5.12 | /exercises/exercise5-12.md   |
+| Exercise 5.13 | /src/Language/ParGMachine.hs |
+| Exercise 5.14 | /src/Language/ParGMachine.hs |
+| Exercise 5.15 | /src/Language/ParGMachine.hs |
+| Exercise 5.16 | _skipped_                    |
 
 </p>
 </details>
