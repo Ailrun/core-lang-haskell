@@ -213,6 +213,13 @@ This repository is about an implementation of a simple functional language based
 | Exercise 5.14 | /src/Language/ParGMachine.hs |
 | Exercise 5.15 | /src/Language/ParGMachine.hs |
 | Exercise 5.16 | _skipped_                    |
+| Exercise 5.17 | /src/Language/ParGMachine.hs |
+| Exercise 5.18 | /src/Language/ParGMachine.hs |
+| Exercise 5.19 | /src/Language/ParGMachine.hs |
+| Exercise 5.20 | /src/Language/ParGMachine.hs |
+| Exercise 5.21 | /src/Language/ParGMachine.hs |
+| Exercise 5.22 | /src/Language/ParGMachine.hs |
+| Exercise 5.23 | /src/Language/ParGMachine.hs |
 
 </p>
 </details>
