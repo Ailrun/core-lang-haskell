@@ -60,7 +60,9 @@ type GmGlobals = Assoc Name Addr
 pgmGetGlobals :: PgmState -> GmGlobals
 pgmGetGlobals ((_, _, globals, _, _), _) = globals
 
+#if __CLH_EXERCISE_5__ < 18
 type GmSparks = [Addr]
+#endif
 
 pgmGetSparks :: PgmState -> GmSparks
 pgmGetSparks ((_, _, _, sparks, _), _) = sparks
@@ -201,6 +203,7 @@ step global locals = dispatch i (putCode is state)
     state = (global, locals)
 
 doAdmin :: PgmState -> PgmState
+#if __CLH_EXERCISE_5__ < 23
 doAdmin ((output, heap, globals, sparks, stats), locals)
   = ((output, heap, globals, sparks, stats'), locals')
   where
@@ -209,6 +212,7 @@ doAdmin ((output, heap, globals, sparks, stats), locals)
     makeNewLocalAndStats local@(code, _, _, _, clock) (localsAcc, statsAcc)
       | null code = (localsAcc, clock : statsAcc)
       | otherwise = (local : localsAcc, statsAcc)
+#endif
 
 data Instruction
   = Push Int
@@ -485,9 +489,11 @@ getArg (NAp a1 a2) = a2
 #endif
 
 parInstruction :: GmState -> GmState
+#if __CLH_EXERCISE_5__ < 18
 parInstruction state = putSparks (a : getSparks state) (putStack stack' state)
   where
     a : stack' = getStack state
+#endif
 
 printInstruction :: GmState -> GmState
 printInstruction state =
@@ -713,8 +719,10 @@ showState state
 showOutput state
   = iConcat [ iStr "  Output: \"", iStr (pgmGetOutput state), iStr "\"" ]
 
+#if __CLH_EXERCISE_5__ < 18
 showSparks state
   = iConcat [ iStr "  Sparks: [ ", iInterleave (iStr ", ") (map (iStr . showAddr) (pgmGetSparks state)), iStr " ]" ]
+#endif
 
 showTasks :: PgmState -> ISeq
 showTasks (global, locals)
@@ -852,6 +860,7 @@ showStats state
   = iConcat [ iStr "Clocks taken = ", iInterleave (iStr ", ") (map iNum (pgmGetStats state)) ]
 
 #if __CLH_EXERCISE_5__ >= 8
+#if __CLH_EXERCISE_5__ < 17
 data Node
   = NNum Int
   | NAp Addr Addr
@@ -861,8 +870,10 @@ data Node
   | NLAp Addr Addr
   | NLGlobal Int GmCode
   deriving (Show, Read, Eq)
+#endif
 
 showNode :: GmState -> Addr -> Node -> ISeq
+#if __CLH_EXERCISE_5__ < 17
 showNode state addr (NNum n) = iNum n
 showNode state addr (NAp a1 a2)
   = iConcat [ iStr "Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2) ]
@@ -878,9 +889,12 @@ showNode state addr (NLAp a1 a2)
 showNode state addr (NLGlobal _ _) = iStr "*Global " `iAppend` iStr gName
   where
     gName = head [ name | (name, addr') <- getGlobals state, addr == addr' ]
+#endif
 
 #if __CLH_EXERCISE_5__ >= 9
 lock :: Addr -> GmState -> GmState
+#if __CLH_EXERCISE_5__ < 20
+#if __CLH_EXERCISE_5__ < 17
 lock addr state
   = putHeap (newHeap (hLookup heap addr)) state
   where
@@ -890,8 +904,14 @@ lock addr state
     newHeap (NGlobal n c)
       | n == 0 = hUpdate heap addr (NLGlobal n c)
       | otherwise = heap
+#else
+lock = undefined
+#endif
+#endif
 
 unlock :: Addr -> GmState -> GmState
+#if __CLH_EXERCISE_5__ < 19
+#if __CLH_EXERCISE_5__ < 17
 unlock addr state
   = newState (hLookup heap addr)
   where
@@ -901,6 +921,10 @@ unlock addr state
     newState (NLGlobal n c)
       = putHeap (hUpdate heap addr (NGlobal n c)) state
     newState _ = state
+#else
+unlock = undefined
+#endif
+#endif
 
 update n state = putStack stack' (putHeap heap' unlockedState)
   where
@@ -909,6 +933,8 @@ update n state = putStack stack' (putHeap heap' unlockedState)
     rA = stack' !! n
     a : stack' = getStack state
 
+#if __CLH_EXERCISE_5__ < 21
+#if __CLH_EXERCISE_5__ < 17
 unwind state = newState (hLookup heap a)
   where
     stack@(a : as) = getStack state
@@ -932,9 +958,19 @@ unwind state = newState (hLookup heap a)
         _ -> state
     newState (NLAp _ _) = putCode [Unwind] state
     newState (NLGlobal _ _) = putCode [Unwind] state
+#else
+unwind = undefined
+#endif
+#endif
 
+#if __CLH_EXERCISE_5__ < 21
+#if __CLH_EXERCISE_5__ < 17
 getArg (NAp a1 a2) = a2
 getArg (NLAp a1 a2) = a2
+#else
+getArg = undefined
+#endif
+#endif
 
 #if __CLH_EXERCISE_5__ >= 13
 machineSize :: Int
@@ -970,6 +1006,7 @@ scheduler global tasks
 #endif
 
 #if __CLH_EXERCISE_5__ >= 14
+#if __CLH_EXERCISE_5__ < 18
 steps state
   = scheduler global' locals'
   where
@@ -977,13 +1014,16 @@ steps state
     newTasks = map makeTask . take (machineSize - length locals) $ sparks
     global' = (output, heap, globals, [], stats)
     locals' = locals ++ newTasks
+#endif
 
 #if __CLH_EXERCISE_5__ >= 15
+#if __CLH_EXERCISE_5__ < 22
 scheduler global tasks
   = (global', nonRunning ++ tasks')
   where
     (global', tasks') = mapAccumL step global (map tick running)
     (running, nonRunning) = spanN machineSize (isProceedableTask global) tasks
+#endif
 
 spanN :: Int -> (a -> Bool) -> [a] -> ([a], [a])
 spanN n f l = go n l
@@ -1008,6 +1048,7 @@ isProceedableTask global task
     state = (global, task)
 
 isReducibleNode :: GmState -> Node -> Bool
+#if __CLH_EXERCISE_5__ < 17
 isReducibleNode state node
   = case node of
       NNum _ -> False
@@ -1017,8 +1058,10 @@ isReducibleNode state node
       NConstr _ _ -> False
       NLAp _ _ -> True
       NLGlobal _ _ -> True
+#endif
 
 isLockedNode :: GmState -> Node -> Bool
+#if __CLH_EXERCISE_5__ < 17
 isLockedNode state node
   = case node of
       NNum _ -> False
@@ -1028,6 +1071,167 @@ isLockedNode state node
       NConstr _ _ -> False
       NLAp _ _ -> True
       NLGlobal _ _ -> True
+#endif
+
+#if __CLH_EXERCISE_5__ >= 17
+data Node
+  = NNum Int
+  | NAp Addr Addr
+  | NGlobal Int GmCode
+  | NInd Addr
+  | NConstr Int [Addr]
+  | NLAp Addr Addr PgmPendingList
+  | NLGlobal Int GmCode PgmPendingList
+  deriving (Show, Read, Eq)
+
+type PgmPendingList = [PgmLocalState]
+
+showNode state addr (NNum n) = iNum n
+showNode state addr (NAp a1 a2)
+  = iConcat [ iStr "Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2) ]
+showNode state addr (NGlobal _ _) = iStr "Global " `iAppend` iStr gName
+  where
+    gName = head [ name | (name, addr') <- getGlobals state, addr == addr' ]
+showNode state addr (NInd a)
+  = iConcat [ iStr "Ind ", iStr (showAddr a) ]
+showNode state addr (NConstr t as)
+  = iConcat [ iStr "Constr ", iNum t, iStr " [", iInterleave (iStr ", ") (map (iStr . showAddr) as), iStr "]" ]
+showNode state addr (NLAp a1 a2 pl)
+  = iConcat [ iStr "*Ap ", iStr (showAddr a1), iStr " ", iStr (showAddr a2), iStr " // ", iNum (length pl) ]
+showNode state addr (NLGlobal _ _ pl)
+  = iConcat [ iStr "*Global ", iStr gName, iStr " // ", iNum (length pl) ]
+  where
+    gName = head [ name | (name, addr') <- getGlobals state, addr == addr' ]
+
+isReducibleNode state node
+  = case node of
+      NNum _ -> False
+      NAp _ _ -> True
+      NGlobal _ _ -> True
+      NInd _ -> True
+      NConstr _ _ -> False
+      NLAp _ _ _ -> True
+      NLGlobal _ _ _ -> True
+
+isLockedNode state node
+  = case node of
+      NNum _ -> False
+      NAp _ _ -> False
+      NGlobal _ _ -> False
+      NInd _ -> False
+      NConstr _ _ -> False
+      NLAp _ _ _ -> True
+      NLGlobal _ _ _ -> True
+
+#if __CLH_EXERCISE_5__ >= 18
+type GmSparks = [PgmLocalState]
+
+parInstruction state = putSparks (makeTask a : getSparks state) (putStack stack' state)
+  where
+    a : stack' = getStack state
+
+showSparks state
+  = iConcat [ iStr "  Sparks:  ", iNum . length . pgmGetSparks $ state, iStr " sparks" ]
+
+steps state
+  = scheduler global' locals'
+  where
+    ((output, heap, globals, sparks, stats), locals) = state
+    newTasks = take (machineSize - length locals) $ sparks
+    global' = (output, heap, globals, [], stats)
+    locals' = locals ++ newTasks
+
+#if __CLH_EXERCISE_5__ >= 19
+emptyPendingList :: [PgmLocalState] -> GmState -> GmState
+emptyPendingList tasks state
+  = putSparks (tasks ++ getSparks state) state
+
+unlock addr state
+  = newState (hLookup heap addr)
+  where
+    heap = getHeap state
+    newState (NLAp a1 a2 pl)
+      = unlock a1 (putHeap (hUpdate heap addr (NAp a1 a2)) (emptyPendingList pl state))
+    newState (NLGlobal n c pl)
+      = putHeap (hUpdate heap addr (NGlobal n c)) (emptyPendingList pl state)
+    newState _ = state
+
+#if __CLH_EXERCISE_5__ >= 20
+lock addr state
+  = putHeap (newHeap (hLookup heap addr)) state
+  where
+    heap = getHeap state
+
+    newHeap (NAp a1 a2) = hUpdate heap addr (NLAp a1 a2 [])
+    newHeap (NGlobal n c)
+      | n == 0 = hUpdate heap addr (NLGlobal n c [])
+      | otherwise = heap
+
+#if __CLH_EXERCISE_5__ >= 21
+emptyTask :: PgmLocalState
+emptyTask = ([], [], [], [], 0)
+
+unwind state = newState (hLookup heap a)
+  where
+    stack@(a : as) = getStack state
+    heap = getHeap state
+    (global, _) = state
+
+    lockedState = lock a state
+    emptyState = (global, emptyTask)
+
+    newState (NNum n) =
+      case getDump state of
+        (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
+        _ -> state
+    newState (NAp a1 a2) = putCode [Unwind] (putStack (a1 : stack) lockedState)
+    newState (NGlobal n c)
+      | length as < n =
+        case getDump state of
+          (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (last stack : as') (putVStack vs' state)))
+          _ -> error "Unwinding with too few arguments"
+      | otherwise = putCode c (putStack (rearrange n heap stack) lockedState)
+    newState (NInd a') = putCode [Unwind] (putStack (a' : as) state)
+    newState (NConstr _ _) =
+      case getDump state of
+        (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
+        _ -> state
+    newState (NLAp a1 a2 pl) = putHeap heap' emptyState
+      where
+        heap' = hUpdate heap a (NLAp a1 a2 (task : pl))
+        (_, task) = putCode [Unwind] state
+    newState (NLGlobal 0 c pl) = putHeap heap' emptyState
+      where
+        heap' = hUpdate heap a (NLGlobal 0 c (task : pl))
+        (_, task) = putCode [Unwind] state
+    newState (NLGlobal n c pl) = putCode [Unwind] state
+
+getArg (NAp _ a2) = a2
+getArg (NLAp _ a2 _) = a2
+
+#if __CLH_EXERCISE_5__ >= 22
+scheduler global@(output, heap, globals, _, stats) tasks
+  = mapAccumL step (output, heap, globals, nonRunning, stats) (map tick running)
+  where
+    (running, nonRunning) = spanN machineSize (isProceedableTask global) tasks
+
+#if __CLH_EXERCISE_5__ >= 23
+doAdmin ((output, heap, globals, sparks, stats), locals)
+  = ((output, heap, globals, sparks, stats'), locals')
+  where
+    (locals', stats') = foldr makeNewLocalAndStats ([], stats) locals
+
+    makeNewLocalAndStats local@(code, _, _, _, clock) (localsAcc, statsAcc)
+      | not (null code) = (local : localsAcc, statsAcc)
+      | clock > 0 = (localsAcc, clock : statsAcc)
+      | otherwise = (localsAcc, statsAcc)
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
 #endif
 #endif
 #endif
