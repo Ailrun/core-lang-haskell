@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Language.Types where
 
 import Util
@@ -47,3 +48,30 @@ type CoreProgram = Program Name
 
 type ScDefn a = (Name, [a], Expr a)
 type CoreScDefn = ScDefn Name
+
+#if __CLH_EXERCISE_6__ >= 1
+data AnnExpr' a b
+  = AVar Name
+  | ANum Int
+  | AConstr Int Int
+  | AAp (AnnExpr a b) (AnnExpr a b)
+  | ALet
+    IsRec
+    (Assoc a (AnnExpr a b))
+    (AnnExpr a b)
+  | ACase
+    (AnnExpr a b)
+    [AnnAlter a b]
+  | ALam [a] (AnnExpr a b)
+  deriving ( Show
+           , Read
+           , Eq
+           )
+type AnnExpr a b = (b, AnnExpr' a b)
+
+type AnnAlter a b = (Int, [a], AnnExpr a b)
+
+type AnnProgram a b = [AnnScDefn a b]
+
+type AnnScDefn a b = (Name, [a], AnnExpr a b)
+#endif
