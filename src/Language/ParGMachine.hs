@@ -179,7 +179,7 @@ eval state = state : restStates
 steps :: PgmState -> PgmState
 #if __CLH_EXERCISE_5__ < 13
 steps state
-  = mapAccumL step global' locals'
+  = mapAccumR step global' locals'
   where
     ((output, heap, globals, sparks, stats), locals) = state
     newTasks = [ makeTask s | s <- sparks ]
@@ -194,7 +194,9 @@ tick :: PgmLocalState -> PgmLocalState
 tick (code, stack, dump, vStack, clock) = (code, stack, dump, vStack, clock + 1)
 
 gmFinal :: PgmState -> Bool
-gmFinal = (uncurry (&&)) . (null . snd &&& null . pgmGetSparks)
+#if __CLH_EXERCISE_5__ < 15
+gmFinal = uncurry (&&) . (null . snd &&& null . pgmGetSparks)
+#endif
 
 step :: PgmGlobalState -> PgmLocalState -> GmState
 step global locals = dispatch i (putCode is state)
@@ -994,14 +996,14 @@ scheduler global tasks
   where
     running = map tick (take machineSize tasks)
     nonRunning = drop machineSize tasks
-    (global', tasks') = mapAccumL step global running
+    (global', tasks') = mapAccumR step global running
 #else
 scheduler global tasks
   = (global', nonRunning ++ tasks')
   where
     running = map tick (take machineSize tasks)
     nonRunning = drop machineSize tasks
-    (global', tasks') = mapAccumL step global running
+    (global', tasks') = mapAccumR step global running
 #endif
 #endif
 
@@ -1011,7 +1013,7 @@ steps state
   = scheduler global' locals'
   where
     ((output, heap, globals, sparks, stats), locals) = state
-    newTasks = map makeTask . take (machineSize - length locals) $ sparks
+    newTasks = map makeTask sparks
     global' = (output, heap, globals, [], stats)
     locals' = locals ++ newTasks
 #endif
@@ -1021,7 +1023,7 @@ steps state
 scheduler global tasks
   = (global', nonRunning ++ tasks')
   where
-    (global', tasks') = mapAccumL step global (map tick running)
+    (global', tasks') = mapAccumR step global (map tick running)
     (running, nonRunning) = spanN machineSize (isProceedableTask global) tasks
 #endif
 
@@ -1036,6 +1038,7 @@ spanN n f l = go n l
         else second (a :) (go m as)
 
 isProceedableTask :: PgmGlobalState -> PgmLocalState -> Bool
+#if __CLH_EXERCISE_5__ < 22
 isProceedableTask global task
   = case code of
       [Eval] -> isReducibleNode state node
@@ -1046,6 +1049,7 @@ isProceedableTask global task
     node = hLookup (getHeap state) addr
     addr = head (getStack state)
     state = (global, task)
+#endif
 
 isReducibleNode :: GmState -> Node -> Bool
 #if __CLH_EXERCISE_5__ < 17
@@ -1072,6 +1076,8 @@ isLockedNode state node
       NLAp _ _ -> True
       NLGlobal _ _ -> True
 #endif
+
+gmFinal = uncurry (&&) . (null . snd &&& uncurry all . ((not .) . isProceedableTask . fst &&& pgmGetSparks))
 
 #if __CLH_EXERCISE_5__ >= 17
 data Node
@@ -1137,9 +1143,8 @@ steps state
   = scheduler global' locals'
   where
     ((output, heap, globals, sparks, stats), locals) = state
-    newTasks = take (machineSize - length locals) $ sparks
     global' = (output, heap, globals, [], stats)
-    locals' = locals ++ newTasks
+    locals' = sparks ++ locals
 
 #if __CLH_EXERCISE_5__ >= 19
 emptyPendingList :: [PgmLocalState] -> GmState -> GmState
@@ -1175,10 +1180,8 @@ unwind state = newState (hLookup heap a)
   where
     stack@(a : as) = getStack state
     heap = getHeap state
-    (global, _) = state
 
     lockedState = lock a state
-    emptyState = (global, emptyTask)
 
     newState (NNum n)
       = case getDump state of
@@ -1196,14 +1199,14 @@ unwind state = newState (hLookup heap a)
       = case getDump state of
         (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
         _ -> state
-    newState (NLAp a1 a2 pl) = putHeap heap' emptyState
+    newState (NLAp a1 a2 pl) = putHeap heap' (global, emptyTask)
       where
         heap' = hUpdate heap a (NLAp a1 a2 (task : pl))
-        (_, task) = putCode [Unwind] state
-    newState (NLGlobal 0 c pl) = putHeap heap' emptyState
+        (global, task) = putCode [Unwind] state
+    newState (NLGlobal 0 c pl) = putHeap heap' (global, emptyTask)
       where
         heap' = hUpdate heap a (NLGlobal 0 c (task : pl))
-        (_, task) = putCode [Unwind] state
+        (global, task) = putCode [Unwind] state
     newState (NLGlobal n c pl) = putCode [Unwind] state
 
 getArg (NAp _ a2) = a2
@@ -1211,9 +1214,18 @@ getArg (NLAp _ a2 _) = a2
 
 #if __CLH_EXERCISE_5__ >= 22
 scheduler global@(output, heap, globals, _, stats) tasks
-  = mapAccumL step (output, heap, globals, nonRunning, stats) (map tick running)
+  = mapAccumR step (output, heap, globals, nonRunning, stats) (map tick running)
   where
     (running, nonRunning) = spanN machineSize (isProceedableTask global) tasks
+
+isProceedableTask global task
+  = case code of
+      [Eval] -> isReducibleNode state node
+      _ -> True
+  where
+    code = getCode state
+    node = hLookup (getHeap state) (head (getStack state))
+    state = (global, task)
 
 #if __CLH_EXERCISE_5__ >= 23
 doAdmin ((output, heap, globals, sparks, stats), locals)
