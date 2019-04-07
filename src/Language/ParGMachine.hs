@@ -459,20 +459,20 @@ unwind state = newState (hLookup heap a)
   where
     stack@(a : as) = getStack state
     heap = getHeap state
-    newState (NNum n) =
-      case getDump state of
+    newState (NNum n)
+      = case getDump state of
         (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
         _ -> state
     newState (NAp a1 a2) = putCode [Unwind] (putStack (a1 : stack) state)
     newState (NGlobal n c)
-      | length as < n =
-        case getDump state of
+      | length as < n
+      = case getDump state of
           (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (last stack : as') (putVStack vs' state)))
           _ -> error "Unwinding with too few arguments"
       | otherwise = putCode c (putStack (rearrange n heap stack) state)
     newState (NInd a') = putCode [Unwind] (putStack (a' : as) state)
-    newState (NConstr _ _) =
-      case getDump state of
+    newState (NConstr _ _)
+      = case getDump state of
         (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
         _ -> state
 #endif
@@ -940,20 +940,20 @@ unwind state = newState (hLookup heap a)
     stack@(a : as) = getStack state
     lockedState = lock a state
     heap = getHeap state
-    newState (NNum n) =
-      case getDump state of
+    newState (NNum n)
+      = case getDump state of
         (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
         _ -> state
     newState (NAp a1 a2) = putCode [Unwind] (putStack (a1 : stack) lockedState)
     newState (NGlobal n c)
-      | length as < n =
-        case getDump state of
+      | length as < n
+        = case getDump state of
           (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (last stack : as') (putVStack vs' state)))
           _ -> error "Unwinding with too few arguments"
       | otherwise = putCode c (putStack (rearrange n heap stack) lockedState)
     newState (NInd a') = putCode [Unwind] (putStack (a' : as) state)
-    newState (NConstr _ _) =
-      case getDump state of
+    newState (NConstr _ _)
+      = case getDump state of
         (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
         _ -> state
     newState (NLAp _ _) = putCode [Unwind] state
@@ -1180,20 +1180,20 @@ unwind state = newState (hLookup heap a)
     lockedState = lock a state
     emptyState = (global, emptyTask)
 
-    newState (NNum n) =
-      case getDump state of
+    newState (NNum n)
+      = case getDump state of
         (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
         _ -> state
     newState (NAp a1 a2) = putCode [Unwind] (putStack (a1 : stack) lockedState)
     newState (NGlobal n c)
-      | length as < n =
-        case getDump state of
+      | length as < n
+      = case getDump state of
           (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (last stack : as') (putVStack vs' state)))
           _ -> error "Unwinding with too few arguments"
       | otherwise = putCode c (putStack (rearrange n heap stack) lockedState)
     newState (NInd a') = putCode [Unwind] (putStack (a' : as) state)
-    newState (NConstr _ _) =
-      case getDump state of
+    newState (NConstr _ _)
+      = case getDump state of
         (c, as', vs') : dump' -> putDump dump' (putCode c (putStack (a : as') (putVStack vs' state)))
         _ -> state
     newState (NLAp a1 a2 pl) = putHeap heap' emptyState
