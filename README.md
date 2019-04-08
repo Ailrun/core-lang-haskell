@@ -236,6 +236,7 @@ This repository is about an implementation of a simple functional language based
 | Exercise 6.2 | /src/Language/Types.hs, /src/Language/PrettyPrinter.hs |
 | Exercise 6.3 | /src/Language/LambdaLifting.hs                         |
 | Exercise 6.4 | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.5 | /src/Language/LambdaLifting.hs                         |
 
 </p>
 </details>

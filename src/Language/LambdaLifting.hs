@@ -154,12 +154,14 @@ renameCase :: Assoc Name Name -> NameSupply -> CoreExpr -> [CoreAlter] -> (NameS
 renameCase env ns e alts = error "renameCase: not yet implemented"
 #endif
 
+#if __CLH_EXERCISE_6__ < 5
 collectScs = concatMap collectOneSc
   where
     collectOneSc (scName, args, rhs)
       = (scName, args, rhs') : scs
       where
         (scs, rhs') = collectScsE rhs
+#endif
 
 collectScsE :: CoreExpr -> ([CoreScDefn], CoreExpr)
 collectScsE (ENum n) = ([], ENum n)
@@ -237,5 +239,18 @@ renameAlter env ns (tag, args, rhs) = (ns2, (tag, args', rhs'))
   where
     (ns1, args', env') = newNames ns args
     (ns2, rhs') = renameE (env' ++ env) ns1 rhs
+
+#if __CLH_EXERCISE_6__ >= 5
+collectScs = concatMap collectOneSc
+  where
+    collectOneSc (scName, args, ELam args' body)
+      = (scName, args ++ args', body') : scs
+      where
+        (scs, body') = collectScsE body
+    collectOneSc (scName, args, rhs)
+      = (scName, args, rhs') : scs
+      where
+        (scs, rhs') = collectScsE rhs
+#endif
 #endif
 #endif
