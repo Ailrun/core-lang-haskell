@@ -237,6 +237,7 @@ This repository is about an implementation of a simple functional language based
 | Exercise 6.3 | /src/Language/LambdaLifting.hs                         |
 | Exercise 6.4 | /src/Language/LambdaLifting.hs                         |
 | Exercise 6.5 | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.6 | /src/Language/LambdaLifting.hs                         |
 
 </p>
 </details>

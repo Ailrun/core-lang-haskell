@@ -164,6 +164,7 @@ collectScs = concatMap collectOneSc
 #endif
 
 collectScsE :: CoreExpr -> ([CoreScDefn], CoreExpr)
+#if __CLH_EXERCISE_6__ < 6
 collectScsE (ENum n) = ([], ENum n)
 collectScsE (EVar v) = ([], EVar v)
 collectScsE (EAp e1 e2) = (scs1 ++ scs2, EAp e1' e2')
@@ -195,6 +196,7 @@ collectScsE (ECase e alts)
 
     collectScsAlt scs (tag, args, rhs)
       = ((scs ++) *** (,,) tag args) (collectScsE rhs)
+#endif
 
 isELam :: Expr a -> Bool
 isELam (ELam _ _) = True
@@ -251,6 +253,41 @@ collectScs = concatMap collectOneSc
       = (scName, args, rhs') : scs
       where
         (scs, rhs') = collectScsE rhs
+
+#if __CLH_EXERCISE_6__ >= 6
+collectScsE (ENum n) = ([], ENum n)
+collectScsE (EVar v) = ([], EVar v)
+collectScsE (EAp e1 e2) = (scs1 ++ scs2, EAp e1' e2')
+  where
+    (scs1, e1') = collectScsE e1
+    (scs2, e2') = collectScsE e2
+collectScsE (ELam args body) = second (ELam args) (collectScsE body)
+collectScsE (ELet isRec defns body)
+  = (rhssScs ++ bodyScs ++ localScs, mkELet isRec nonScs' body')
+  where
+    (rhssScs, defns') = mapAccumL collectScsD [] defns
+
+    scs' = filter (isELam . snd) defns'
+    nonScs' = filter (not . isELam . snd) defns'
+    localScs
+      = [ (name, args, body)
+        | (name, ELam args body) <- scs'
+        ]
+
+    (bodyScs, body') = collectScsE body
+
+    collectScsD scs (name, ELam rhsArgs rhsBody) = ((scs ++) *** (,) name . ELam rhsArgs) (collectScsE rhsBody)
+    collectScsD scs (name, rhs) = ((scs ++) *** (,) name) (collectScsE rhs)
+collectScsE (EConstr t a) = ([], EConstr t a)
+collectScsE (ECase e alts)
+  = (scsE ++ scsAlts, ECase e' alts')
+  where
+    (scsE, e') = collectScsE e
+    (scsAlts, alts') = mapAccumL collectScsAlt [] alts
+
+    collectScsAlt scs (tag, args, rhs)
+      = ((scs ++) *** (,,) tag args) (collectScsE rhs)
+#endif
 #endif
 #endif
 #endif
