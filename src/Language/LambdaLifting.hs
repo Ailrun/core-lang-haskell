@@ -245,7 +245,8 @@ renameAlter env ns (tag, args, rhs) = (ns2, (tag, args', rhs'))
 #if __CLH_EXERCISE_6__ >= 5
 collectScs = concatMap collectOneSc
   where
-    collectOneSc (scName, args, ELam args' body)
+    collectOneSc (scName, args, ELet isRec [(name1, ELam args' body)] (EVar name2))
+      | not isRec && name1 == name2
       = (scName, args ++ args', body') : scs
       where
         (scs, body') = collectScsE body
@@ -276,7 +277,9 @@ collectScsE (ELet isRec defns body)
 
     (bodyScs, body') = collectScsE body
 
-    collectScsD scs (name, ELam rhsArgs rhsBody) = ((scs ++) *** (,) name . ELam rhsArgs) (collectScsE rhsBody)
+    collectScsD scs (name, ELet isRec [(name1, ELam rhsArgs rhsBody)] (EVar name2))
+      | not isRec && name1 == name2
+      = ((scs ++) *** (,) name . ELam rhsArgs) (collectScsE rhsBody)
     collectScsD scs (name, rhs) = ((scs ++) *** (,) name) (collectScsE rhs)
 collectScsE (EConstr t a) = ([], EConstr t a)
 collectScsE (ECase e alts)
