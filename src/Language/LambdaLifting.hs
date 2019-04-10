@@ -342,13 +342,13 @@ abstractJE env (_, ALet isRec defns body) = ELet isRec (funDefns' ++ varDefns') 
         ]
     varDefns' = map (second (abstractJE rhsEnv)) varDefns
     body' = abstractJE bodyEnv body
-abstractJE env (free, ACase e alts) = ECase e' alts'
+abstractJE env (_, ACase e alts) = ECase e' alts'
   where
     e' = abstractJE env e
-    alts' = map (abstractJAlter env) alts
-
-abstractJAlter :: Assoc Name [Name] -> AnnAlter Name (Set Name) -> CoreAlter
-abstractJAlter env (tag, args, expr) = undefined
+    alts'
+      = [ (altTag, altArgs, abstractJE env altBody)
+        | (altTag, altArgs, altBody) <- alts
+        ]
 
 actualFreeList :: Assoc Name [Name] -> Set Name -> [Name]
 actualFreeList env free
