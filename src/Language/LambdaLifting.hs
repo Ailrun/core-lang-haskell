@@ -3,6 +3,11 @@ module Language.LambdaLifting
   ( lambdaRun
   , lambdaLift
   , runS
+#if __CLH_EXERCISE_6__ >= 7
+  , lambdaRunJ
+  , lambdaLiftJ
+  , runJ
+#endif
   )
 where
 
@@ -290,6 +295,71 @@ collectScsE (ECase e alts)
 
     collectScsAlt scs (tag, args, rhs)
       = ((scs ++) *** (,,) tag args) (collectScsE rhs)
+
+#if __CLH_EXERCISE_6__ >= 7
+abstractJ :: AnnProgram Name (Set Name) -> CoreProgram
+
+lambdaRunJ = putStrLn . runJ
+
+lambdaLiftJ :: CoreProgram -> CoreProgram
+lambdaLiftJ = collectScs . abstractJ . freeVars . rename
+
+runJ = prettyPrint . lambdaLiftJ . parse
+
+abstractJE :: Assoc Name [Name] -> AnnExpr Name (Set Name) -> CoreExpr
+
+abstractJ program
+  = [ (name, args, abstractJE [] rhs)
+    | (name, args, rhs) <- program
+    ]
+
+abstractJE env (_, ANum n) = ENum n
+abstractJE env (_, AConstr t a) = EConstr t a
+abstractJE env (_, AAp e1 e2) = EAp (abstractJE env e1) (abstractJE env e2)
+abstractJE env (_, AVar g) = foldl EAp (EVar g) (map EVar (aLookup env g []))
+abstractJE env (free, ALam args body)
+  = foldl EAp sc (map EVar fvList)
+  where
+    fvList = actualFreeList env free
+    sc = ELet nonRecursive [("sc", scRhs)] (EVar "sc")
+    scRhs = ELam (fvList ++ args) (abstractJE env body)
+abstractJE env (_, ALet isRec defns body) = ELet isRec (funDefns' ++ varDefns') body'
+  where
+    (funDefns, varDefns) = partition (isALam . snd) defns
+
+    funNames = bindersOf funDefns
+    freeInFuns = setSubtraction (setUnionList (map (freeVarsOf . snd) funDefns)) (setFromList funNames)
+    varsToAbstract = actualFreeList env freeInFuns
+
+    bodyEnv = map (flip (,) varsToAbstract) funNames ++ env
+    rhsEnv
+      | isRec = bodyEnv
+      | otherwise = env
+
+    funDefns'
+      = [ (name, ELam (varsToAbstract ++ args) (abstractJE rhsEnv body))
+        | (name, (_, ALam args body)) <- funDefns
+        ]
+    varDefns' = map (second (abstractJE rhsEnv)) varDefns
+    body' = abstractJE bodyEnv body
+abstractJE env (free, ACase e alts) = ECase e' alts'
+  where
+    e' = abstractJE env e
+    alts' = map (abstractJAlter env) alts
+
+abstractJAlter :: Assoc Name [Name] -> AnnAlter Name (Set Name) -> CoreAlter
+abstractJAlter env (tag, args, expr) = undefined
+
+actualFreeList :: Assoc Name [Name] -> Set Name -> [Name]
+actualFreeList env free
+  = setToList (setUnionList [ setFromList (aLookup env name [name])
+                            | name <- setToList free
+                            ])
+
+isALam :: AnnExpr a b -> Bool
+isALam (_, ALam _ _) = True
+isALam _ = False
+#endif
 #endif
 #endif
 #endif
