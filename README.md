@@ -230,14 +230,19 @@ This repository is about an implementation of a simple functional language based
 <summary>Exercises in Chapter 6</summary>
 <p>
 
-| Name         | Files                                                  |
-|--------------|--------------------------------------------------------|
-| Exercise 6.1 | /src/Language/Types.hs                                 |
-| Exercise 6.2 | /src/Language/Types.hs, /src/Language/PrettyPrinter.hs |
-| Exercise 6.3 | /src/Language/LambdaLifting.hs                         |
-| Exercise 6.4 | /src/Language/LambdaLifting.hs                         |
-| Exercise 6.5 | /src/Language/LambdaLifting.hs                         |
-| Exercise 6.6 | /src/Language/LambdaLifting.hs                         |
+| Name          | Files                                                  |
+|---------------|--------------------------------------------------------|
+| Exercise 6.1  | /src/Language/Types.hs                                 |
+| Exercise 6.2  | /src/Language/Types.hs, /src/Language/PrettyPrinter.hs |
+| Exercise 6.3  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.4  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.5  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.6  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.7  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.8  | _not yet solved__                                      |
+| Exercise 6.9  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.10 | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.11 | /src/Language/LambdaLifting.hs                         |
 
 </p>
 </details>
