@@ -435,10 +435,10 @@ freeToLevelE level env (_, AAp e1 e2) = (max (levelOf e1') (levelOf e2'), AAp e1
   where
     e1' = freeToLevelE level env e1
     e2' = freeToLevelE level env e2
-freeToLevelE level env (free, ALam [arg] body) = (freeSetToLevel env free, ALam [arg'] body')
+freeToLevelE level env (free, ALam args body) = (freeSetToLevel env free, ALam args' body')
   where
-    arg' = (arg, level + 1)
-    body' = freeToLevelE (level + 1) (arg' : env) body
+    args' = map (flip (,) (level + 1)) args
+    body' = freeToLevelE (level + 1) (args' ++ env) body
 freeToLevelE level env (_, ALet isRec defns body) = (levelOf body', ALet isRec defns' body')
   where
     binders = bindersOf defns
@@ -499,7 +499,7 @@ transformMFE level e = ELet nonRecursive [(("v", level), e)] (EVar "v")
 identifyMFEsE' _ (ANum n) = ENum n
 identifyMFEsE' _ (AVar v) = EVar v
 identifyMFEsE' level (AAp e1 e2) = EAp (identifyMFEsE level e1) (identifyMFEsE level e2)
-identifyMFEsE' _ (ALam [arg] body) = ELam [arg] (identifyMFEsE (snd arg) body)
+identifyMFEsE' _ (ALam args body) = ELam args (identifyMFEsE (snd (head args)) body)
 identifyMFEsE' level (ALet isRec defns body) = ELet isRec defns' body'
   where
     body' = identifyMFEsE level body
@@ -603,15 +603,17 @@ floatSc (name, [], rhs)
 
 type FloatedDefns = [(Level, IsRec, [(Name, Expr Name)])]
 
+#if __CLH_EXERCISE_6__ < 12
 floatE (ENum n) = ([], ENum n)
 floatE (EVar v) = ([], EVar v)
 floatE (EAp e1 e2) = (fd1 ++ fd2, EAp e1' e2')
   where
     (fd1, e1') = floatE e1
     (fd2, e2') = floatE e2
-floatE (ELam [arg] body) = (fdOuter, ELam [arg'] (install fdThisLevel body'))
+floatE (ELam args body) = (fdOuter, ELam args' (install fdThisLevel body'))
   where
-    (arg', thisLevel) = arg
+    args' = map fst args
+    (_, thisLevel) = head args
     (fdBody, body') = floatE body
     (fdOuter, fdThisLevel) = partitionFloats thisLevel fdBody
 floatE (ELet isRec defns body) = (rhsd ++ [thisGroup] ++ bodyd, body')
@@ -620,6 +622,7 @@ floatE (ELet isRec defns body) = (rhsd ++ [thisGroup] ++ bodyd, body')
     (rhsd, defns') = mapAccumL floatDefn [] defns
     thisGroup = (snd . head . bindersOf $ defns, isRec, defns')
 floatE (ECase e alts) = floatCase e alts
+#endif
 
 floatCase :: Expr (Name, Level) -> [Alter (Name, Level)] -> (FloatedDefns, Expr Name)
 #if __CLH_EXERCISE_6__ < 11
@@ -674,6 +677,31 @@ floatCase e alts = (eds ++ altds, ECase e' alts')
         (_, thisLevel) = head args
         (fdRhs, rhs') = floatE rhs
         (fdOuter, fdThisLevel) = partitionFloats thisLevel fdRhs
+
+#if __CLH_EXERCISE_6__ >= 12
+floatE (ENum n) = ([], ENum n)
+floatE (EVar v) = ([], EVar v)
+floatE (EAp e1 e2) = (fd1 ++ fd2, EAp e1' e2')
+  where
+    (fd1, e1') = floatE e1
+    (fd2, e2') = floatE e2
+floatE (ELam args body) = (fdOuter, mkELam args' (install fdThisLevel body'))
+  where
+    args' = map fst args
+    (_, thisLevel) = head args
+    (fdBody, body') = floatE body
+    (fdOuter, fdThisLevel) = partitionFloats thisLevel fdBody
+floatE (ELet isRec defns body) = (rhsd ++ [thisGroup] ++ bodyd, body')
+  where
+    (bodyd, body') = floatE body
+    (rhsd, defns') = mapAccumL floatDefn [] defns
+    thisGroup = (snd . head . bindersOf $ defns, isRec, defns')
+floatE (ECase e alts) = floatCase e alts
+
+mkELam :: [Name] -> CoreExpr -> CoreExpr
+mkELam args (ELam args' body) = mkELam (args ++ args') body
+mkELam args body = ELam args body
+#endif
 #endif
 #else
 float = undefined
