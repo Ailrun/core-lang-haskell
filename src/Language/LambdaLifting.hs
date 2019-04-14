@@ -320,6 +320,7 @@ abstractJ program
     | (name, args, rhs) <- program
     ]
 
+#if __CLH_EXERCISE_6__ < 8
 abstractJE env (_, ANum n) = ENum n
 abstractJE env (_, AConstr t a) = EConstr t a
 abstractJE env (_, AAp e1 e2) = EAp (abstractJE env e1) (abstractJE env e2)
@@ -356,6 +357,7 @@ abstractJE env (_, ACase e alts) = ECase e' alts'
       = [ (altTag, altArgs, abstractJE env altBody)
         | (altTag, altArgs, altBody) <- alts
         ]
+#endif
 
 actualFreeList :: Assoc Name [Name] -> Set Name -> [Name]
 actualFreeList env free
@@ -368,7 +370,65 @@ isALam (_, ALam _ _) = True
 isALam _ = False
 
 #if __CLH_EXERCISE_6__ >= 8
--- | It's not yet done
+abstractJE env (_, ANum n) = ENum n
+abstractJE env (_, AConstr t a) = EConstr t a
+abstractJE env (_, AAp e1 e2) = EAp (abstractJE env e1) (abstractJE env e2)
+abstractJE env (_, AVar g) = foldl EAp (EVar g) (map EVar (aLookup env g []))
+abstractJE env (free, ALam args body)
+  = foldl EAp sc (map EVar fvList)
+  where
+    fvList = actualFreeList env free
+    sc = ELet nonRecursive [("sc", scRhs)] (EVar "sc")
+    scRhs = ELam (fvList ++ args) (abstractJE env body)
+abstractJE env (_, ALet isRec defns body) = ELet isRec (funDefns' ++ varDefns') body'
+  where
+    (funDefns, varDefns) = partition (isALam . snd) defns
+
+    funNames = bindersOf funDefns
+    freeInFuns = setSubtraction (setUnionList (map (freeVarsOf . snd) funDefns)) (setFromList funNames)
+    varsToAbstract = actualFreeList env freeInFuns
+    freesInFuns = actualFreeListsOfBindings env (map (second freeVarsOf) funDefns)
+
+    bodyEnv
+      | isRec = map (second setToList) freesInFuns ++ env
+      | otherwise = map (flip (,) varsToAbstract) funNames ++ env
+    rhsEnv
+      | isRec = bodyEnv
+      | otherwise = env
+
+    funDefns'
+      | isRec
+      = [ (name, ELam (aLookup freesInFuns name setEmpty ++ args) (abstractJE rhsEnv body))
+        | (name, (_, ALam args body)) <- funDefns
+        ]
+      | otherwise
+      = [ (name, ELam (varsToAbstract ++ args) (abstractJE rhsEnv body))
+        | (name, (_, ALam args body)) <- funDefns
+        ]
+    varDefns' = map (second (abstractJE rhsEnv)) varDefns
+    body' = abstractJE bodyEnv body
+abstractJE env (_, ACase e alts) = ECase e' alts'
+  where
+    e' = abstractJE env e
+    alts'
+      = [ (altTag, altArgs, abstractJE env altBody)
+        | (altTag, altArgs, altBody) <- alts
+        ]
+
+actualFreeListsOfBindings :: Assoc Name [Name] -> Assoc Name (Set Name) -> Assoc Name (Set Name)
+actualFreeListsOfBindings env bs
+  | canImprove = actualFreeListsOfBindings env bs'
+  | otherwise = map (second (flip setSubtraction (setFromList funNames))) bs
+  where
+    funNames = bindersOf bs
+
+    canImprove = any (not . setIsEmpty . uncurry setSubtraction . (snd *** snd)) (zip bs bs')
+    bs' = improveFreeListsOfBindings env bs
+
+improveFreeListsOfBindings :: Assoc Name [Name] -> Assoc Name (Set Name) -> Assoc Name (Set Name)
+improveFreeListsOfBindings env bs = map (second (actualFreeList env')) bs
+  where
+    env' = map (second setToList) bs ++ env
 
 #if __CLH_EXERCISE_6__ >= 9
 lambdaRunF = putStrLn . runF
