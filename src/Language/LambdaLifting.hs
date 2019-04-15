@@ -11,6 +11,11 @@ module Language.LambdaLifting
   , lambdaRunF
   , fullyLazyLift
   , runF
+#if __CLH_EXERCISE_6__ >= 16
+  , lambdaRunD
+  , dependency
+  , runD
+#endif
 #endif
 #endif
   )
@@ -681,6 +686,7 @@ floatE (ELet isRec defns body) = (rhsd ++ [thisGroup] ++ bodyd, body')
     (bodyd, body') = floatE body
     (rhsd, defns') = mapAccumL floatDefn [] defns
     thisGroup = (snd . head . bindersOf $ defns, isRec, defns')
+floatE (EConstr t a) = ([], EConstr t a)
 floatE (ECase e alts) = floatCase e alts
 #endif
 
@@ -756,11 +762,95 @@ floatE (ELet isRec defns body) = (rhsd ++ [thisGroup] ++ bodyd, body')
     (bodyd, body') = floatE body
     (rhsd, defns') = mapAccumL floatDefn [] defns
     thisGroup = (snd . head . bindersOf $ defns, isRec, defns')
+floatE (EConstr t a) = ([], EConstr t a)
 floatE (ECase e alts) = floatCase e alts
 
 mkELam :: [Name] -> CoreExpr -> CoreExpr
 mkELam args (ELam args' body) = mkELam (args ++ args') body
 mkELam args body = ELam args body
+
+#if __CLH_EXERCISE_6__ >= 14
+depthFirstSearch :: Ord a => (a -> [a]) -> (Set a, [a]) -> [a] -> (Set a, [a])
+depthFirstSearch = foldl . search
+  where
+    search relation state@(visited, sequence) vertex
+      | setElementOf vertex visited = state
+      | otherwise = (visited', vertex : sequence')
+      where
+        (visited', sequence') = depthFirstSearch relation state' (relation vertex)
+        state' = (setUnion visited (setSingleton vertex), sequence)
+
+#if __CLH_EXERCISE_6__ >= 15
+spanningSearch :: Ord a => (a -> [a]) -> (Set a, [Set a]) -> [a] -> (Set a, [Set a])
+spanningSearch = foldl . search
+  where
+    search relation state@(visited, setSequence) vertex
+      | setElementOf vertex visited = state
+      | otherwise = (visited', setFromList (vertex : sequence) : setSequence)
+      where
+        (visited', sequence) = depthFirstSearch relation state' (relation vertex)
+        state' = (setUnion visited (setSingleton vertex), [])
+
+scc :: (Show a, Ord a) => (a -> [a]) -> (a -> [a]) -> [a] -> [Set a]
+scc ins outs x
+  = snd . spanningSearch ins (setEmpty, []) . snd . depthFirstSearch outs (setEmpty, []) $ x
+
+#if __CLH_EXERCISE_6__ >= 16
+lambdaRunD = putStrLn . runD
+
+dependency :: CoreProgram -> CoreProgram
+dependency = depends . freeVars
+
+runD = prettyPrint . dependency . parse
+
+depends :: AnnProgram Name (Set Name) -> CoreProgram
+depends program
+  = [ (scName, args, dependsE rhs)
+    | (scName, args, rhs) <- program
+    ]
+
+dependsE :: AnnExpr Name (Set Name) -> CoreExpr
+dependsE (_, ANum n) = ENum n
+dependsE (_, AVar v) = EVar v
+dependsE (_, AAp e1 e2) = EAp (dependsE e1) (dependsE e2)
+dependsE (_, ALam args body) = ELam args (dependsE body)
+dependsE (free, ALet isRec defns body)
+  = foldr (mkDependLet isRec) (dependsE body) defnGroups
+  where
+    binders = bindersOf defns
+    binderSet = setFromList binders
+
+    edges
+      = [ (start, end)
+        | (start, (free, e)) <- defns
+        , end <- setToList (setIntersection free binderSet)
+        ]
+
+    ins v = map fst . filter ((v ==) . snd) $ edges
+    outs v  = map snd . filter ((v ==) . fst) $ edges
+
+    components
+      | isRec = map setToList (scc ins outs binders)
+      | otherwise = map setSingleton binders
+
+    defnGroups = map (map (id &&& \n -> aLookup defns n (error "defnGroups"))) components
+dependsE (_, AConstr t a) = EConstr t a
+dependsE (_, ACase e alts) = ECase (dependsE e) [ (tag, args, dependsE rhs) | (tag, args, rhs) <- alts ]
+
+mkDependLet :: IsRec -> Assoc Name (AnnExpr Name (Set Name)) -> CoreExpr -> CoreExpr
+#if __CLH_EXERCISE_6__ < 16
+mkDependLet isRec defns body = ELet isRec (map (second dependsE) defns) body
+#endif
+
+mkDependLet isRec defns body = ELet isReallyRec (map (second dependsE) defns) body
+  where
+    binderSet = setFromList (bindersOf defns)
+    isReallyRec
+      | isRec = not . all (setIsEmpty . (setIntersection binderSet)) . map (freeVarsOf . snd) $ defns
+      | otherwise = nonRecursive
+#endif
+#endif
+#endif
 #endif
 #endif
 #else

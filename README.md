@@ -245,6 +245,9 @@ This repository is about an implementation of a simple functional language based
 | Exercise 6.11 | /src/Language/LambdaLifting.hs                         |
 | Exercise 6.12 | /src/Language/LambdaLifting.hs                         |
 | Exercise 6.13 | /exercises/exercise6-13.v                              |
+| Exercise 6.14 | /src/Language/LambdaLifting.hs, _The proof is skipped_ |
+| Exercise 6.15 | /src/Language/LambdaLifting.hs, _The proof is skipped_ |
+| Exercise 6.16 | /src/Language/LambdaLifting.hs                         |
 
 </p>
 </details>
