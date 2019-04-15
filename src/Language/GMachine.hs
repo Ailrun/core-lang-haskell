@@ -1,12 +1,15 @@
 {-# LANGUAGE CPP #-}
 module Language.GMachine
+#if __CLH_EXERCISE_1__ >= 8
   ( run
   , showResults
   , eval
   , compile
   )
+#endif
 where
 
+#if __CLH_EXERCISE_1__ >= 8
 import Data.List
 import Data.ISeq
 import Language.Parser
@@ -1759,6 +1762,7 @@ compileR e@(EConstr _ _) env = compileE e env ++ [Update (length env), Return]
 compileR e env = compileE e env ++ [Update d, Pop d, Unwind]
   where
     d = length env
+#endif
 #endif
 #endif
 #endif

@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 module Language.TIM
+#if __CLH_EXERCISE_1__ >= 8
   ( timRun
   , run
   , timFullRun
@@ -8,8 +9,10 @@ module Language.TIM
   , showResults
   , fullRun
   )
+#endif
 where
 
+#if __CLH_EXERCISE_1__ >= 8
 import Control.Arrow
 import Data.ISeq
 import Data.List
@@ -2360,6 +2363,7 @@ amToClosure (Code inst) fPtr _ _ _ = (inst, fPtr)
 amToClosure (Label _ n) _ _ heap (gFPtr, _) = fGet heap gFPtr n
 amToClosure (IntConst n) _ _ _ _ = (intCode, FrameInt n)
 amToClosure (Data n) _ fDPtr heap _ = fGet heap fDPtr n
+#endif
 #endif
 #endif
 #endif

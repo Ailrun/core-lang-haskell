@@ -1,11 +1,14 @@
 {-# LANGUAGE CPP #-}
 module Language.TiMachineAlter
+#if __CLH_EXERCISE_1__ >= 8
   ( run
   , compile
   , eval
   )
+#endif
 where
 
+#if __CLH_EXERCISE_1__ >= 8
 import Data.ISeq
 import Data.List
 import Data.StatHeap
@@ -865,6 +868,7 @@ primitives
     , ("stop", primStop)
     , ("print", primPrint)
     ]
+#endif
 #endif
 #endif
 #endif

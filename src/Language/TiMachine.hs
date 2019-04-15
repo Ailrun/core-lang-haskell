@@ -1,11 +1,14 @@
 {-# LANGUAGE CPP #-}
 module Language.TiMachine
+#if __CLH_EXERCISE_1__ >= 8
   ( run
   , compile
   , eval
   )
+#endif
 where
 
+#if __CLH_EXERCISE_1__ >= 8
 import Data.ISeq
 import Data.List
 #if __CLH_EXERCISE_2__ >= 7
@@ -1606,6 +1609,7 @@ compile program
 
     addressOfMain = aLookup globals "main" (error "main is not defined")
     addressOfPrintList = aLookup globals "printList" (error "printList is not defined")
+#endif
 #endif
 #endif
 #endif

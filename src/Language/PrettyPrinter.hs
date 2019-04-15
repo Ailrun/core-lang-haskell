@@ -11,7 +11,7 @@ prettyPrint :: CoreProgram -> String
 -- Following codes show bad performances,
 -- therefore they are impractical.
 -- See </exercises/exercise1-01.xls exercise1-01.xls> for data.
-#if __CLH_EXERCISE_1__ <= 1
+#if __CLH_EXERCISE_1__ == 1
 prettyPrintExpr :: CoreExpr -> String
 prettyPrintExpr (ENum n) = show n
 prettyPrintExpr (EVar v) = v
@@ -30,7 +30,7 @@ makeMultiAp n e1 e2 = foldl EAp e1 (take n e2s)
     e2s = e2 : e2s
 #endif
 
-#if __CLH_EXERCISE_1__ >= 1
+#if __CLH_EXERCISE_1__ > 1
 #if __CLH_EXERCISE_1__ < 8
 prettyPrintExpr :: CoreExpr -> ISeq
 #if __CLH_EXERCISE_1__ < 3
@@ -66,7 +66,6 @@ prettyPrintDefinition (name, expr)
 #if __CLH_EXERCISE_1__ >= 3
 prettyPrintExpr (EVar v) = iStr v
 prettyPrintExpr (EAp e1 e2) = prettyPrintExpr e1 `iAppend` iStr " " `iAppend` prettyPrintAExpr e2
-#endif
 prettyPrintExpr (ELet isRec defns expr)
   = iConcat [ iStr keyword, iNewline
             , iStr "  ", iIndent (prettyPrintDefinitions defns), iNewline
@@ -85,7 +84,6 @@ prettyPrintExpr (ELam vars expr)
             , iStr "  ", iIndent (prettyPrintExpr expr)
             ]
 
-#if __CLH_EXERCISE_1__ >= 3
 prettyPrintAlternatives :: [CoreAlter] -> ISeq
 prettyPrintAlternatives alters
   = iInterleave sep (map prettyPrintAlternative alters)
@@ -119,10 +117,12 @@ prettyPrintProgram scdefns
     sep = iConcat [ iStr ";", iNewline ]
 
 prettyPrintSupercombinatorDefinition :: CoreScDefn -> ISeq
+#if __CLH_EXERCISE_1__ < 8
 prettyPrintSupercombinatorDefinition (name, [], expr)
-  = iConcat [ iStr name, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
+  = iConcat [ iStr name, iStr " = ", iIndent (prettyPrintExpr expr) ]
 prettyPrintSupercombinatorDefinition (name, vars, expr)
-  = iConcat [ iStr name, iStr " ", prettyPrintVars vars, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
+  = iConcat [ iStr name, iStr " ", prettyPrintVars vars, iStr " = ", iIndent (prettyPrintExpr expr) ]
+#endif
 
 -- |
 -- 'prettyPrintExpr' with 'ISep' works much faster than one without it.
@@ -205,6 +205,11 @@ prettyPrintDefinitions defns
 prettyPrintDefinition :: (Name, CoreExpr) -> ISeq
 prettyPrintDefinition (name, expr)
   = iConcat [ iStr name, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
+
+prettyPrintSupercombinatorDefinition (name, [], expr)
+  = iConcat [ iStr name, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
+prettyPrintSupercombinatorDefinition (name, vars, expr)
+  = iConcat [ iStr name, iStr " ", prettyPrintVars vars, iStr " = ", iIndent (prettyPrintExpr 0 expr) ]
 
 prettyPrint program = iDisplay (prettyPrintProgram program)
 
@@ -401,7 +406,12 @@ prettyPrintWith f a seq
   = iConcat [ iStr "(", f a, iStr ", ", seq, iStr ")" ]
 #endif
 #endif
+#else
+prettyPrint = undefined
 #endif
+#else
+prettyPrintAExpr = undefined
+prettyPrint = undefined
 #endif
 #else
 prettyPrint = undefined

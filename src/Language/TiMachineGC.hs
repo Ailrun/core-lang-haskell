@@ -1,11 +1,14 @@
 {-# LANGUAGE CPP #-}
 module Language.TiMachineGC
+#if __CLH_EXERCISE_1__ >= 8
   ( run
   , compile
   , eval
   )
+#endif
 where
 
+#if __CLH_EXERCISE_1__ >= 8
 import Control.Arrow
 import Data.ISeq
 import Data.List
@@ -931,5 +934,6 @@ scanHeap = undefined
 findStackRoots = undefined
 findDumpRoots = undefined
 findGlobalRoots = undefined
+#endif
 #endif
 #endif

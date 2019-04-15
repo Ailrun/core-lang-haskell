@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 module Language.ParGMachine
+#if __CLH_EXERCISE_1__ >= 8
   ( parGMRun
   , run
 #if __CLH_EXERCISE_5__ >= 2
@@ -12,8 +13,10 @@ module Language.ParGMachine
 #endif
 #endif
   )
+#endif
 where
 
+#if __CLH_EXERCISE_1__ >= 8
 import Control.Arrow
 import Data.List
 import Data.ISeq
@@ -1237,6 +1240,7 @@ doAdmin ((output, heap, globals, sparks, stats), locals)
       | not (null code) = (local : localsAcc, statsAcc)
       | clock > 0 = (localsAcc, clock : statsAcc)
       | otherwise = (localsAcc, statsAcc)
+#endif
 #endif
 #endif
 #endif

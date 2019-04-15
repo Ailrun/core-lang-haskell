@@ -112,4 +112,13 @@ iLayn seqs
       = iConcat [ iFWNum 4 n, iStr ") ", iIndent seq, iNewline ]
 #endif
 #endif
+#else
+data ISeq
+
+iNil = undefined
+iStr = undefined
+iAppend = undefined
+iNewline = undefined
+iIndent = undefined
+iDisplay = undefined
 #endif
