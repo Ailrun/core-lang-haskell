@@ -224,6 +224,34 @@ This repository is about an implementation of a simple functional language based
 </p>
 </details>
 
+### Chapter 6
+
+<details>
+<summary>Exercises in Chapter 6</summary>
+<p>
+
+| Name          | Files                                                  |
+|---------------|--------------------------------------------------------|
+| Exercise 6.1  | /src/Language/Types.hs                                 |
+| Exercise 6.2  | /src/Language/Types.hs, /src/Language/PrettyPrinter.hs |
+| Exercise 6.3  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.4  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.5  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.6  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.7  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.8  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.9  | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.10 | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.11 | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.12 | /src/Language/LambdaLifting.hs                         |
+| Exercise 6.13 | /exercises/exercise6-13.v                              |
+| Exercise 6.14 | /src/Language/LambdaLifting.hs, _The proof is skipped_ |
+| Exercise 6.15 | /src/Language/LambdaLifting.hs, _The proof is skipped_ |
+| Exercise 6.16 | /src/Language/LambdaLifting.hs                         |
+
+</p>
+</details>
+
 ## References
 
 <span id="reference-1">[Simon\[1\]](#text-1): Simon L Peyton Jones, David R Lester. January 1992. _Implementing functional languages: a tutorial_. Prentice Hall</span>

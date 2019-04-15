@@ -34,6 +34,7 @@ library:
     - -D__CLH_EXERCISE_3__=100
     - -D__CLH_EXERCISE_4__=100
     - -D__CLH_EXERCISE_5__=100
+    - -D__CLH_EXERCISE_6__=100
   ## Library fields
   #exposed:
   #exposed-modules:
